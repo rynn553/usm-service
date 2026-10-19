@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="brand"><span class="brand-mark" aria-label="USM">USM</span><div><strong>Universiti Sains Malaysia</strong><span>Service Recording &amp; Tracking System</span></div></div>
     <section class="login-card" aria-labelledby="login-title">
         <div class="gold-line"></div><p class="eyebrow">RUANG KERJA STAF IT</p>
-        <h1 id="login-title">TRYYY Permintaan perkhidmatan,<br>diurus dengan jelas.</h1>
+        <h1 id="login-title">Permintaan perkhidmatan,<br>diurus dengan jelas.</h1>
         <p class="intro">Log masuk untuk merekod perkhidmatan, menjejak kemajuan dan menyemak permintaan yang selesai.</p>
         <?php if ($error !== ''): ?><div class="alert" role="alert"><?= e($error) ?></div><?php endif; ?>
         <?php if (isset($_GET['logged_out'])): ?><p class="notice" role="status">Anda telah log keluar.</p><?php endif; ?>
