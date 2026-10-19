@@ -1,0 +1,242 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Oct 19, 2026 at 02:59 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `usm-service`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `departments`
+--
+
+CREATE TABLE `departments` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `departments`
+--
+
+INSERT INTO `departments` (`id`, `name`, `is_active`) VALUES
+(1, 'Department of Computer Science', 1),
+(2, 'Department of Engineering', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `handlers`
+--
+
+CREATE TABLE `handlers` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `handlers`
+--
+
+INSERT INTO `handlers` (`id`, `name`, `is_active`) VALUES
+(1, 'Arina', 1),
+(2, 'Izzah', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_requests`
+--
+
+CREATE TABLE `service_requests` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `uid` varchar(40) NOT NULL,
+  `requester_name` varchar(150) NOT NULL,
+  `department_id` int(10) UNSIGNED NOT NULL,
+  `service_type_id` int(10) UNSIGNED NOT NULL,
+  `service_details` text NOT NULL,
+  `estimated_cost` decimal(10,2) NOT NULL,
+  `requested_at` datetime NOT NULL,
+  `handler_id` int(10) UNSIGNED NOT NULL,
+  `status` enum('in_progress','ready','completed') NOT NULL DEFAULT 'in_progress',
+  `ready_at` datetime DEFAULT NULL,
+  `picked_up_at` datetime DEFAULT NULL,
+  `payment_date` date DEFAULT NULL,
+  `reference_no` varchar(100) DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `created_by` int(10) UNSIGNED NOT NULL,
+  `completed_by` int(10) UNSIGNED DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `service_requests`
+--
+
+INSERT INTO `service_requests` (`id`, `uid`, `requester_name`, `department_id`, `service_type_id`, `service_details`, `estimated_cost`, `requested_at`, `handler_id`, `status`, `ready_at`, `picked_up_at`, `payment_date`, `reference_no`, `completed_at`, `created_by`, `completed_by`, `created_at`, `updated_at`) VALUES
+(1, 'USM-2026-DEMO001', 'Pemohon Demo 1', 1, 1, 'Contoh servis format PC.', 50.00, '2026-10-12 09:00:00', 1, 'in_progress', NULL, NULL, NULL, NULL, NULL, 1, NULL, '2026-10-19 08:53:53', '2026-10-19 08:53:53'),
+(2, 'USM-2026-DEMO002', 'Pemohon Demo 2', 2, 2, 'Contoh pemasangan aplikasi.', 20.00, '2026-10-12 10:00:00', 2, 'ready', '2026-10-13 14:00:00', NULL, NULL, NULL, NULL, 1, NULL, '2026-10-19 08:53:53', '2026-10-19 08:53:53'),
+(3, 'USM-2026-DEMO003', 'Pemohon Demo 3', 1, 3, 'Contoh pemeriksaan masalah PC.', 30.00, '2026-10-10 11:00:00', 1, 'completed', '2026-10-11 14:00:00', '2026-10-12 15:00:00', '2026-10-12', 'DEMO-REF-003', '2026-10-12 15:00:00', 1, 1, '2026-10-19 08:53:53', '2026-10-19 08:53:53'),
+(4, 'USM-2026-DEMO004', 'Pemohon Demo 4', 2, 1, 'Contoh permintaan September, selesai Oktober.', 50.00, '2026-09-30 09:00:00', 2, 'completed', '2026-10-01 12:00:00', '2026-10-02 10:00:00', '2026-10-02', 'DEMO-REF-004', '2026-10-02 10:00:00', 1, 1, '2026-10-19 08:53:53', '2026-10-19 08:53:53');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_types`
+--
+
+CREATE TABLE `service_types` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `service_types`
+--
+
+INSERT INTO `service_types` (`id`, `name`, `is_active`) VALUES
+(1, 'Format PC', 1),
+(2, 'Install Apps', 1),
+(3, 'Troubleshooting', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `username` varchar(100) NOT NULL,
+  `password_hash` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `name`, `username`, `password_hash`, `is_active`, `created_at`) VALUES
+(1, 'Admin', 'admin', 'abc123', 0, '2026-10-19 08:53:53');
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `departments`
+--
+ALTER TABLE `departments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `name` (`name`);
+
+--
+-- Indexes for table `handlers`
+--
+ALTER TABLE `handlers`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `service_requests`
+--
+ALTER TABLE `service_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uid` (`uid`),
+  ADD KEY `fk_request_department` (`department_id`),
+  ADD KEY `fk_request_handler_directory` (`handler_id`),
+  ADD KEY `fk_request_creator` (`created_by`),
+  ADD KEY `fk_request_completer` (`completed_by`),
+  ADD KEY `idx_request_date` (`requested_at`),
+  ADD KEY `idx_type_date` (`service_type_id`,`requested_at`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_completion_date` (`completed_at`);
+
+--
+-- Indexes for table `service_types`
+--
+ALTER TABLE `service_types`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `name` (`name`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `username` (`username`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `departments`
+--
+ALTER TABLE `departments`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `handlers`
+--
+ALTER TABLE `handlers`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `service_requests`
+--
+ALTER TABLE `service_requests`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `service_types`
+--
+ALTER TABLE `service_types`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `service_requests`
+--
+ALTER TABLE `service_requests`
+  ADD CONSTRAINT `fk_request_completer` FOREIGN KEY (`completed_by`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `fk_request_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `fk_request_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
+  ADD CONSTRAINT `fk_request_handler_directory` FOREIGN KEY (`handler_id`) REFERENCES `handlers` (`id`),
+  ADD CONSTRAINT `fk_request_type` FOREIGN KEY (`service_type_id`) REFERENCES `service_types` (`id`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
