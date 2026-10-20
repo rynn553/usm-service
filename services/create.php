@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$allowed($departments,$old['department_id'])) $errors[]='Sila pilih jabatan/pusat pengajian yang sah.';
     if (!$allowed($types,$old['service_type_id'])) $errors[]='Sila pilih jenis perkhidmatan yang sah.';
     if ($old['service_details']==='' || mb_strlen($old['service_details'])>5000) $errors[]='Butiran perkhidmatan wajib diisi (maksimum 5000 aksara).';
-    if ($old['estimated_cost']==='' || !preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D',$old['estimated_cost']) || (float)$old['estimated_cost']>99999999.99) $errors[]='Masukkan anggaran kos yang sah (RM0.00 atau lebih).';
+    if ($old['estimated_cost']==='' || !preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D',$old['estimated_cost']) || (float)$old['estimated_cost']>99999999.99) $errors[]='Masukkan kos yang sah (RM0.00 atau lebih).';
     $when = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i',$old['requested_at']);
     if (!$when || $when->format('Y-m-d\TH:i')!==$old['requested_at']) $errors[]='Tarikh dan masa permintaan tidak sah.';
     if (!$allowed($handlers,$old['handler_id'])) $errors[]='Sila pilih pengendali staf IT yang sah.';
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div><label for="department_id">Jabatan/Pusat Pengajian *</label><select id="department_id" name="department_id" required><option value="">Pilih jabatan/pusat pengajian</option><?php foreach($departments as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id']===$old['department_id']?'selected':'' ?>><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
 <div class="record-full"><label for="service_type_id">Jenis Perkhidmatan *</label><select id="service_type_id" name="service_type_id" required><option value="">Pilih jenis perkhidmatan</option><?php foreach($types as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id']===$old['service_type_id']?'selected':'' ?>><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
 <div class="record-full"><label for="service_details">Butiran Jenis Perkhidmatan *</label><textarea id="service_details" name="service_details" rows="4" maxlength="5000" required><?= e($old['service_details']) ?></textarea></div>
-<div><label for="estimated_cost">Anggaran Kos (RM) *</label><input id="estimated_cost" name="estimated_cost" type="number" min="0" max="99999999.99" step="0.01" placeholder="0.00" value="<?= e($old['estimated_cost']) ?>" required></div>
+<div><label for="estimated_cost">Kos (RM) *</label><input id="estimated_cost" name="estimated_cost" type="number" min="0" max="99999999.99" step="0.01" placeholder="0.00" value="<?= e($old['estimated_cost']) ?>" required></div>
 <div><label for="requested_at">Tarikh/Masa Permintaan *</label><input id="requested_at" name="requested_at" type="datetime-local" value="<?= e($old['requested_at']) ?>" required></div>
 <div class="record-full"><label for="handler_id">Nama Pengendali Staf IT *</label><select id="handler_id" name="handler_id" required><option value="">Pilih pengendali staf IT</option><?php foreach($handlers as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id']===$old['handler_id']?'selected':'' ?>><?= e($item['name']) ?></option><?php endforeach; ?></select></div></div>
 <div class="record-actions"><button type="submit">Simpan / Rekod Perkhidmatan</button><a href="<?= APP_BASE ?>/home.php">Batal</a></div>
