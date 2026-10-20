@@ -2,26 +2,15 @@
 declare(strict_types=1);
 require __DIR__ . '/includes/auth.php';
 require_login();
+require __DIR__ . '/config/database.php';
+$summary = $pdo->query("SELECT COALESCE(SUM(estimated_cost),0) AS total_cost, SUM(status='in_progress') AS in_progress, SUM(status='ready') AS ready, SUM(status='completed') AS completed FROM service_requests")->fetch();
+$recent = $pdo->query("SELECT r.uid,r.requester_name,r.requested_at,r.status,r.estimated_cost,h.name AS handler_name FROM service_requests r JOIN handlers h ON h.id=r.handler_id ORDER BY r.requested_at DESC,r.id DESC LIMIT 8")->fetchAll();
+$labels = ['in_progress'=>'In Progress','ready'=>'Ready','completed'=>'Completed'];
 ?>
-<!DOCTYPE html>
-<html lang="ms">
-<head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ruang Kerja | Perkhidmatan USM</title>
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css">
-</head>
-<body class="workspace">
-<header class="workspace-header">
-    <div class="brand"><span class="brand-mark">USM</span><div><strong>Perkhidmatan USM</strong><span>Rekod &amp; Jejak Perkhidmatan</span></div></div>
-    <form method="post" action="<?= APP_BASE ?>/logout.php">
-        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-        <button type="submit" class="outline">Logout</button>
-    </form>
-</header>
-<main class="workspace-content">
-    <p class="eyebrow">RUANG KERJA STAF IT</p>
-    <h1>Selamat datang, <?= e((string) ($_SESSION['user_name'] ?? 'Admin')) ?>.</h1>
-    <p>Anda berjaya log masuk.</p>
-    <section class="home-card"><h2>Ruang kerja sedang disediakan</h2><p>Dashboard dan modul perkhidmatan akan disambungkan di sini selepas siap.</p></section>
-</main>
-</body></html>
+<!DOCTYPE html><html lang="ms"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Papan Pemuka | Perkhidmatan USM</title>
+<link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css"><link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css"><link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/dashboard.css"><script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script></head>
+<body class="workspace"><?php $activePage='home'; require __DIR__ . '/includes/sidebar.php'; ?>
+<div class="dashboard-area"><header class="dashboard-header"><div><p class="eyebrow">REKOD &amp; JEJAK PERKHIDMATAN</p><h1>Dashboard</h1></div><form method="post" action="<?= APP_BASE ?>/logout.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><button class="logout-button" type="submit">Log Keluar ↗</button></form></header>
+<main class="dashboard-main" id="main-content" tabindex="-1"><div class="dashboard-intro"><div><h2>Ringkasan perkhidmatan</h2><p>Ringkasan terkini permintaan perkhidmatan yang direkodkan.</p></div><a class="dashboard-primary" href="<?= APP_BASE ?>/services/create.php">+ Rekod perkhidmatan</a></div>
+<section class="stats-grid" aria-label="Statistik perkhidmatan"><div class="stat-card"><span>Total recorded cost</span><strong>RM <?= number_format((float)$summary['total_cost'],2) ?></strong><small>Across all recorded requests</small></div><div class="stat-card"><span>In progress</span><strong><?= (int)$summary['in_progress'] ?></strong><small>Currently being handled</small></div><div class="stat-card"><span>Ready for pickup</span><strong><?= (int)$summary['ready'] ?></strong><small>Awaiting staff/student pickup</small></div><div class="stat-card"><span>Completed / Paid</span><strong><?= (int)$summary['completed'] ?></strong><small>Completed services</small></div></section>
+<section class="recent-panel"><div class="recent-heading"><h2>Permintaan terkini</h2><a href="<?= APP_BASE ?>/services/index.php">Lihat semua permintaan</a></div><div class="table-scroll"><table><thead><tr><th>UID</th><th>NAMA STAF/PELAJAR</th><th>TARIKH PERMINTAAN</th><th>STATUS PERKHIDMATAN</th><th>ANGGARAN KOS</th><th>PENGENDALI</th></tr></thead><tbody><?php foreach($recent as $r): ?><tr><td class="uid"><?= e($r['uid']) ?></td><td><?= e($r['requester_name']) ?></td><td><?= e(date('d M Y',strtotime($r['requested_at']))) ?></td><td><span class="status status-<?= e($r['status']) ?>"><?= e($labels[$r['status']] ?? $r['status']) ?></span></td><td>RM <?= number_format((float)$r['estimated_cost'],2) ?></td><td><?= e($r['handler_name']) ?></td></tr><?php endforeach; ?><?php if(!$recent): ?><tr><td colspan="6">Belum ada permintaan direkodkan.</td></tr><?php endif; ?></tbody></table></div></section></main></div></body></html>
