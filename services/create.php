@@ -2,104 +2,76 @@
 declare(strict_types=1);
 require __DIR__ . '/../includes/auth.php';
 require_login();
+require __DIR__ . '/../config/database.php';
 date_default_timezone_set('Asia/Kuala_Lumpur');
 $errors = [];
-$departments = $types = $handlers = [];
-$available = false;
-$values = ['requester_name' => '', 'department_id' => '', 'service_type_id' => '', 'service_details' => '', 'estimated_cost' => '0.00', 'requested_at' => date('Y-m-d\TH:i'), 'handler_id' => ''];
-$success = $_SESSION['service_created'] ?? null;
-unset($_SESSION['service_created']);
+$old = ['requester_name'=>'','department_id'=>'','service_type_id'=>'','service_details'=>'','estimated_cost'=>'','requested_at'=>date('Y-m-d\TH:i'),'handler_id'=>''];
 try {
-    require __DIR__ . '/../config/database.php';
-    $departments = $pdo->query('SELECT id, name FROM departments WHERE is_active=1 ORDER BY name')->fetchAll();
-    $types = $pdo->query('SELECT id, name FROM service_types WHERE is_active=1 ORDER BY id')->fetchAll();
-    $handlers = $pdo->query('SELECT id, name FROM handlers WHERE is_active=1 ORDER BY name')->fetchAll();
-    $available = (bool) ($departments && $types && $handlers);
-    if (!$available) $errors[] = 'Senarai jabatan, servis atau pengendali belum tersedia. Sila hubungi pentadbir.';
-} catch (PDOException $exception) {
-    error_log('Service form database error: ' . $exception->getMessage());
-    $errors[] = 'Sambungan pangkalan data tidak tersedia. Sila cuba lagi.';
+    $departments = $pdo->query('SELECT id,name FROM departments WHERE is_active=1 ORDER BY name')->fetchAll();
+    $types = $pdo->query('SELECT id,name FROM service_types WHERE is_active=1 ORDER BY id')->fetchAll();
+    $handlers = $pdo->query('SELECT id,name FROM handlers WHERE is_active=1 ORDER BY id')->fetchAll();
+} catch (PDOException $ex) {
+    error_log('Service form lookup: '.$ex->getMessage());
+    http_response_code(503);
+    exit('Tidak dapat memuatkan pilihan borang. Sila semak sambungan pangkalan data.');
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    foreach ($values as $key => $default) {
-        $values[$key] = is_string($_POST[$key] ?? null) ? trim($_POST[$key]) : '';
+    foreach ($old as $key=>$value) {
+        $old[$key] = is_string($_POST[$key] ?? null) ? trim($_POST[$key]) : '';
     }
-    if (!valid_csrf()) $errors[] = 'Sesi borang tidak sah. Sila cuba lagi.';
-    if ($values['requester_name'] === '' || mb_strlen($values['requester_name'], 'UTF-8') > 150) $errors[] = 'Nama staf/pelajar diperlukan (maksimum 150 aksara).';
-    foreach (['department_id' => [$departments, 'jabatan/pusat pengajian'], 'service_type_id' => [$types, 'jenis servis'], 'handler_id' => [$handlers, 'pengendali IT']] as $key => [$options, $label]) {
-        if (!in_array($values[$key], array_map('strval', array_column($options, 'id')), true)) $errors[] = 'Sila pilih ' . $label . ' yang sah.';
-    }
-    if (strlen($values['service_details']) > 10000) $errors[] = 'Maklumat servis terlalu panjang (maksimum 10,000 bait).';
-    if (!preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D', $values['estimated_cost'])) $errors[] = 'Anggaran kos mestilah antara RM0.00 hingga RM99,999,999.99, dengan maksimum dua tempat perpuluhan.';
-    $requested = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $values['requested_at']);
-    if (!$requested || $requested->format('Y-m-d\TH:i') !== $values['requested_at'] || (int) $requested->format('Y') < 1000) $errors[] = 'Sila masukkan tarikh dan masa permintaan yang sah.';
-    $formToken = is_string($_POST['form_token'] ?? null) ? $_POST['form_token'] : '';
-    if (!isset($_SESSION['service_forms'][$formToken])) $errors[] = 'Borang ini telah dihantar atau tamat tempoh. Sila semak dan hantar semula.';
-    if (!$errors && $available) {
+    if (!valid_csrf()) $errors[] = 'Sesi borang tidak sah. Muat semula halaman.';
+    if ($old['requester_name']==='' || mb_strlen($old['requester_name'])>150) $errors[]='Nama staf/pelajar wajib diisi (maksimum 150 aksara).';
+    $allowed = function(array $items, string $id): bool {
+        if (!ctype_digit($id) || (int)$id < 1) return false;
+        foreach ($items as $item) if ((int)$item['id'] === (int)$id) return true;
+        return false;
+    };
+    if (!$allowed($departments,$old['department_id'])) $errors[]='Sila pilih jabatan/pusat pengajian yang sah.';
+    if (!$allowed($types,$old['service_type_id'])) $errors[]='Sila pilih jenis perkhidmatan yang sah.';
+    if ($old['service_details']==='' || mb_strlen($old['service_details'])>5000) $errors[]='Butiran perkhidmatan wajib diisi (maksimum 5000 aksara).';
+    if ($old['estimated_cost']==='' || !preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D',$old['estimated_cost']) || (float)$old['estimated_cost']>99999999.99) $errors[]='Masukkan anggaran kos yang sah (RM0.00 atau lebih).';
+    $when = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i',$old['requested_at']);
+    if (!$when || $when->format('Y-m-d\TH:i')!==$old['requested_at']) $errors[]='Tarikh dan masa permintaan tidak sah.';
+    if (!$allowed($handlers,$old['handler_id'])) $errors[]='Sila pilih pengendali staf IT yang sah.';
+    if (!$errors) {
         try {
-            $statement = $pdo->prepare("INSERT INTO service_requests (uid, requester_name, department_id, service_type_id, service_details, estimated_cost, requested_at, handler_id, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'in_progress', ?)");
-            for ($attempt = 0; $attempt < 3; $attempt++) {
-                $uid = 'USM-' . $requested->format('Y') . '-' . strtoupper(bin2hex(random_bytes(8)));
+            $stmt = $pdo->prepare('INSERT INTO service_requests (uid,requester_name,department_id,service_type_id,service_details,estimated_cost,requested_at,handler_id,status,created_by) VALUES (:uid,:requester_name,:department_id,:service_type_id,:service_details,:estimated_cost,:requested_at,:handler_id,\'in_progress\',:created_by)');
+            $saved = false;
+            for ($attempt=0; $attempt<4 && !$saved; $attempt++) {
+                $uid = 'USM-'.$when->format('Y').'-'.strtoupper(bin2hex(random_bytes(5)));
                 try {
-                    $statement->execute([$uid, $values['requester_name'], $values['department_id'], $values['service_type_id'], $values['service_details'], $values['estimated_cost'], $requested->format('Y-m-d H:i:s'), $values['handler_id'], (int) $_SESSION['user_id']]);
-                    break;
-                } catch (PDOException $exception) {
-                    if (($exception->errorInfo[1] ?? null) !== 1062 || $attempt === 2) throw $exception;
+                    $stmt->execute(['uid'=>$uid,'requester_name'=>$old['requester_name'],'department_id'=>(int)$old['department_id'],'service_type_id'=>(int)$old['service_type_id'],'service_details'=>$old['service_details'],'estimated_cost'=>number_format((float)$old['estimated_cost'],2,'.',''),'requested_at'=>$when->format('Y-m-d H:i:s'),'handler_id'=>(int)$old['handler_id'],'created_by'=>(int)$_SESSION['user_id']]);
+                    $saved = true;
+                } catch (PDOException $ex) {
+                    if ($ex->getCode()!=='23000' || !str_contains($ex->getMessage(),'uid')) throw $ex;
                 }
             }
-            unset($_SESSION['service_forms'][$formToken]);
-            $_SESSION['service_created'] = $uid;
-            header('Location: ' . APP_BASE . '/services/create.php', true, 303);
+            if (!$saved) throw new RuntimeException('Tidak dapat menjana UID unik.');
+            $_SESSION['service_created_uid']=$uid;
+            header('Location: '.APP_BASE.'/services/index.php?created=1',true,303);
             exit;
-        } catch (PDOException $exception) {
-            error_log('Create service error: ' . $exception->getMessage());
-            $errors[] = 'Rekod tidak dapat disimpan. Sila semak pilihan anda dan cuba lagi.';
+        } catch (Throwable $ex) {
+            error_log('Create service failed: '.$ex->getMessage());
+            $errors[]='Rekod tidak dapat disimpan. Sila cuba lagi atau hubungi penyelenggara.';
         }
     }
 }
-$formToken = bin2hex(random_bytes(24));
-$_SESSION['service_forms'] = array_slice($_SESSION['service_forms'] ?? [], -19, null, true);
-$_SESSION['service_forms'][$formToken] = true;
-function service_options(array $options, string $selected): void {
-    foreach ($options as $option) {
-        echo '<option value="' . e((string) $option['id']) . '"' . ((string) $option['id'] === $selected ? ' selected' : '') . '>' . e($option['name']) . '</option>';
-    }
-}
 ?>
-<!DOCTYPE html>
-<html lang="ms">
-<head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Rekod Servis | Perkhidmatan USM</title>
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css">
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/services.css">
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css">
-    <script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script>
-</head>
-<body class="workspace">
-<?php $activePage = 'create'; require __DIR__ . '/../includes/sidebar.php'; ?>
-<main class="workspace-content" id="main-content" tabindex="-1">
-    <p class="eyebrow">PERKHIDMATAN IT</p>
-    <h1>Rekod Servis</h1>
-    <p class="intro">Daftar permintaan servis baharu. UID dijana secara automatik dan status bermula sebagai In Progress.</p>
-    <?php if (is_string($success)): ?><div class="notice" role="status">Rekod berjaya disimpan. UID: <strong><?= e($success) ?></strong> · Status: In Progress.</div><?php endif; ?>
-    <?php if ($errors): ?><div class="alert" role="alert"><strong>Sila semak maklumat berikut:</strong><ul><?php foreach ($errors as $error): ?><li><?= e($error) ?></li><?php endforeach; ?></ul></div><?php endif; ?>
-    <form method="post" class="home-card service-form">
-        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-        <input type="hidden" name="form_token" value="<?= e($formToken) ?>">
-        <h2>Maklumat permintaan</h2>
-        <p>Semua medan wajib diisi kecuali maklumat tambahan.</p>
-        <div class="service-grid">
-            <div><label for="requester_name">Nama Staf / Pelajar</label><input id="requester_name" name="requester_name" maxlength="150" required value="<?= e($values['requester_name']) ?>"></div>
-            <div><label for="department_id">Jabatan / Pusat Pengajian</label><select id="department_id" name="department_id" required><option value="">Pilih jabatan / pusat pengajian</option><?php service_options($departments, $values['department_id']); ?></select></div>
-            <div><label for="service_type_id">Jenis Servis</label><select id="service_type_id" name="service_type_id" required><option value="">Pilih jenis servis</option><?php service_options($types, $values['service_type_id']); ?></select></div>
-            <div><label for="handler_id">Pengendali IT</label><select id="handler_id" name="handler_id" required><option value="">Pilih pengendali</option><?php service_options($handlers, $values['handler_id']); ?></select></div>
-            <div class="full-width"><label for="service_details">Maklumat Tambahan <span>(pilihan)</span></label><textarea id="service_details" name="service_details" rows="4" maxlength="2500" placeholder="Contoh: Komputer perlahan dan perlu pemasangan semula aplikasi."><?= e($values['service_details']) ?></textarea></div>
-            <div><label for="estimated_cost">Anggaran Kos (RM)</label><input id="estimated_cost" name="estimated_cost" type="number" min="0" max="99999999.99" step="0.01" required value="<?= e($values['estimated_cost']) ?>"></div>
-            <div><label for="requested_at">Tarikh &amp; Masa Permintaan</label><input id="requested_at" name="requested_at" type="datetime-local" min="1000-01-01T00:00" max="9999-12-31T23:59" required value="<?= e($values['requested_at']) ?>"><small>Waktu Malaysia (UTC+08:00)</small></div>
-        </div>
-        <div class="service-actions"><button class="primary" type="submit" <?= !$available ? 'disabled' : '' ?>>Simpan Rekod</button><a href="<?= APP_BASE ?>/home.php">Kembali</a></div>
-    </form>
-</main>
-</body>
-</html>
+<!doctype html><html lang="ms"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rekod Perkhidmatan | USM</title>
+<link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css"><link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css"><link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/record-service.css"><script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script></head>
+<body class="workspace record-page">
+<?php $activePage='create'; require __DIR__.'/../includes/sidebar.php'; ?>
+<div class="record-area"><header class="record-header"><div><p class="eyebrow">REKOD &amp; JEJAK PERKHIDMATAN</p><h1>Record Service</h1></div><form action="<?= APP_BASE ?>/logout.php" method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><button class="record-logout" type="submit">Log Keluar ↗</button></form></header>
+<main class="record-main" id="main-content" tabindex="-1"><p class="record-hint">Masukkan butiran perkhidmatan di bawah. Medan bertanda * diperlukan.</p>
+<?php if ($errors): ?><div class="record-errors" role="alert"><strong>Sila semak borang:</strong><ul><?php foreach($errors as $error): ?><li><?= e($error) ?></li><?php endforeach; ?></ul></div><?php endif; ?>
+<section class="record-card"><h2>Ketibaan Staf &amp; Rekod Perkhidmatan</h2>
+<form method="post" action="<?= APP_BASE ?>/services/create.php" class="record-form"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+<div class="record-grid"><div><label for="requester_name">Nama Staf/Pelajar *</label><input id="requester_name" name="requester_name" maxlength="150" required value="<?= e($old['requester_name']) ?>"></div>
+<div><label for="department_id">Jabatan/Pusat Pengajian *</label><select id="department_id" name="department_id" required><option value="">Pilih jabatan/pusat pengajian</option><?php foreach($departments as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id']===$old['department_id']?'selected':'' ?>><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
+<div class="record-full"><label for="service_type_id">Jenis Perkhidmatan *</label><select id="service_type_id" name="service_type_id" required><option value="">Pilih jenis perkhidmatan</option><?php foreach($types as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id']===$old['service_type_id']?'selected':'' ?>><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
+<div class="record-full"><label for="service_details">Butiran Jenis Perkhidmatan *</label><textarea id="service_details" name="service_details" rows="4" maxlength="5000" required><?= e($old['service_details']) ?></textarea></div>
+<div><label for="estimated_cost">Anggaran Kos (RM) *</label><input id="estimated_cost" name="estimated_cost" type="number" min="0" max="99999999.99" step="0.01" placeholder="0.00" value="<?= e($old['estimated_cost']) ?>" required></div>
+<div><label for="requested_at">Tarikh/Masa Permintaan *</label><input id="requested_at" name="requested_at" type="datetime-local" value="<?= e($old['requested_at']) ?>" required></div>
+<div class="record-full"><label for="handler_id">Nama Pengendali Staf IT *</label><select id="handler_id" name="handler_id" required><option value="">Pilih pengendali staf IT</option><?php foreach($handlers as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id']===$old['handler_id']?'selected':'' ?>><?= e($item['name']) ?></option><?php endforeach; ?></select></div></div>
+<div class="record-actions"><button type="submit">Simpan / Rekod Perkhidmatan</button><a href="<?= APP_BASE ?>/home.php">Batal</a></div>
+</form></section></main></div></body></html>
