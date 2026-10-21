@@ -4,265 +4,332 @@ declare(strict_types=1);
 require __DIR__ . '/../includes/auth.php';
 require_login();
 require __DIR__ . '/../config/database.php';
-date_default_timezone_set('Asia/Kuala_Lumpur');
+require __DIR__ . '/service_multi.php';
 
-function active_redirect(string $query = ''): never
+date_default_timezone_set('Asia/Kuala_Lumpur');
+function go_back(string $query = ''): never
 {
-    header('Location: ' . APP_BASE . '/services/index.php' . ($query !== '' ? '?' . $query : ''), true, 303);
-    exit;
+  header('Location: ' . APP_BASE . '/services/index.php' . ($query ? '?' . $query : ''), true, 303);
+  exit;
 }
-function active_date(?string $date, bool $time = false): string
+function display_date(?string $date, bool $time = false): string
 {
-    if (!$date) return '—';
-    try {
-        return (new DateTimeImmutable($date))->format($time ? 'd M Y, h:i A' : 'd M Y');
-    } catch (Throwable $e) {
-        return '—';
-    }
+  if (!$date) return '—';
+  try {
+    return (new DateTimeImmutable($date))->format($time ? 'd M Y, h:i A' : 'd M Y');
+  } catch (Throwable) {
+    return '—';
+  }
 }
-function active_allowed(array $items, string $id): bool
+function valid_lookup(array $items, string $value): bool
 {
-    if (!ctype_digit($id) || (int)$id < 1) return false;
-    foreach ($items as $item) if ((int)$item['id'] === (int)$id) return true;
-    return false;
+  if (!ctype_digit($value)) return false;
+  foreach ($items as $i) if ((int)$i['id'] === (int)$value) return true;
+  return false;
 }
-$errors = [];
 try {
-    $departments = $pdo->query('SELECT id,name,is_active FROM departments ORDER BY name')->fetchAll();
-    $types = $pdo->query('SELECT id,name,is_active FROM service_types ORDER BY name')->fetchAll();
-    $handlers = $pdo->query('SELECT id,name,is_active FROM handlers ORDER BY name')->fetchAll();
+  $departments = $pdo->query('SELECT id,name,is_active FROM departments ORDER BY name')->fetchAll();
+  $types = $pdo->query('SELECT id,name,is_active FROM service_types ORDER BY id')->fetchAll();
+  $handlers = $pdo->query('SELECT id,name,is_active FROM handlers ORDER BY name')->fetchAll();
+  $hardwareTypeId = hardware_service_id($types);
 } catch (PDOException $e) {
-    error_log('Active requests lookup error: ' . $e->getMessage());
-    http_response_code(503);
-    exit('Tidak dapat memuatkan pilihan. Semak sambungan pangkalan data.');
+  error_log($e->getMessage());
+  http_response_code(503);
+  exit('Tidak dapat memuatkan pilihan.');
 }
-$search = trim((string)($_GET['q'] ?? ''));
-if (mb_strlen($search) > 120) $search = mb_substr($search, 0, 120);
+$search = mb_substr(trim(is_string($_GET['q'] ?? null) ? $_GET['q'] : ''), 0, 120);
 $status = (string)($_GET['status'] ?? 'all');
 if (!in_array($status, ['all', 'in_progress', 'ready'], true)) $status = 'all';
 $page = filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
-$back = http_build_query(array_filter(['q' => $search, 'status' => $status === 'all' ? '' : $status, 'page' => $page], static fn($v) => $v !== ''));
-
+$back = http_build_query(['q' => $search, 'status' => $status, 'page' => $page]);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = (string)($_POST['action'] ?? '');
-    $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-    $return = (string)($_POST['return'] ?? '');
-    parse_str($return, $ret);
-    $safeReturn = http_build_query(array_filter([
-        'q' => mb_substr(trim(is_string($ret['q'] ?? null) ? $ret['q'] : ''), 0, 120),
-        'status' => in_array($ret['status'] ?? '', ['in_progress', 'ready'], true) ? $ret['status'] : '',
-        'page' => filter_var($ret['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1,
-    ], static fn($v) => $v !== ''));
-    if (!valid_csrf() || !$id || !in_array($action, ['ready', 'edit'], true)) {
-        $_SESSION['active_flash'] = ['error', 'Permintaan tidak sah. Sila cuba lagi.'];
-        active_redirect($safeReturn);
+  $action = (string)($_POST['action'] ?? '');
+  $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+  parse_str(is_string($_POST['return'] ?? null) ? $_POST['return'] : '', $ret);
+  $safeReturn = http_build_query(['q' => mb_substr(trim(is_string($ret['q'] ?? null) ? $ret['q'] : ''), 0, 120), 'status' => in_array($ret['status'] ?? '', ['in_progress', 'ready'], true) ? $ret['status'] : 'all', 'page' => filter_var($ret['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1]);
+  if (!valid_csrf() || !$id || !in_array($action, ['ready', 'edit'], true)) {
+    $_SESSION['active_flash'] = ['error', 'Permintaan tidak sah.'];
+    go_back($safeReturn);
+  }
+  try {
+    if ($action === 'ready') {
+      $stmt = $pdo->prepare("UPDATE service_requests SET status='ready',ready_at=NOW() WHERE id=? AND status='in_progress'");
+      $stmt->execute([$id]);
+      $_SESSION['active_flash'] = $stmt->rowCount() ? ['success', 'Status berjaya ditukar kepada Ready.'] : ['error', 'Status tidak berubah.'];
+    } else {
+      $fields = [];
+      foreach (['requester_name', 'department_id', 'service_details', 'estimated_cost', 'requested_at', 'handler_id'] as $field) $fields[$field] = is_string($_POST[$field] ?? null) ? trim($_POST[$field]) : '';
+      $ids = multi_ids($_POST['service_type_ids'] ?? null, $types);
+      $hardware = multi_hardware($_POST['hardware'] ?? null, $hardwareTypeId !== null && in_array($hardwareTypeId, $ids, true));
+      $deviceData = device_input($_POST);
+      $when = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $fields['requested_at']);
+      if ($fields['requester_name'] === '' || mb_strlen($fields['requester_name']) > 150 || mb_strlen($fields['service_details']) > 5000 || !valid_lookup($departments, $fields['department_id']) || !valid_lookup($handlers, $fields['handler_id']) || !preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D', $fields['estimated_cost']) || !$when || $when->format('Y-m-d\TH:i') !== $fields['requested_at']) throw new InvalidArgumentException('Sila lengkapkan semua medan dengan maklumat yang sah.');
+      $pdo->beginTransaction();
+      $stmt = $pdo->prepare("UPDATE service_requests SET requester_name=?,department_id=?,service_type_id=?,service_details=?,estimated_cost=?,requested_at=?,handler_id=? WHERE id=? AND status IN ('in_progress','ready')");
+      $stmt->execute([$fields['requester_name'], (int)$fields['department_id'], $ids[0], $fields['service_details'], $fields['estimated_cost'], $when->format('Y-m-d H:i:s'), (int)$fields['handler_id'], $id]);
+      $check = $pdo->prepare("SELECT COUNT(*) FROM service_requests WHERE id=? AND status IN ('in_progress','ready')");
+      $check->execute([$id]);
+      if (!(int)$check->fetchColumn()) throw new RuntimeException('Rekod sudah selesai atau tidak ditemui.');
+      save_multi($pdo, (int)$id, $ids, $hardware);
+      save_device($pdo, (int)$id, $deviceData);
+      $pdo->commit();
+      $_SESSION['active_flash'] = ['success', 'Butiran perkhidmatan berjaya disimpan.'];
     }
-    try {
-        if ($action === 'ready') {
-            $stmt = $pdo->prepare("UPDATE service_requests SET status='ready', ready_at=NOW() WHERE id=:id AND status='in_progress'");
-            $stmt->execute(['id' => $id]);
-            $_SESSION['active_flash'] = $stmt->rowCount() ? ['success', 'Status berjaya ditukar kepada Ready.'] : ['error', 'Status tidak berubah. Rekod mungkin telah dikemas kini oleh staf lain.'];
-        } else {
-            $fields = [];
-            foreach (['requester_name', 'department_id', 'service_type_id', 'service_details', 'estimated_cost', 'requested_at', 'handler_id'] as $field) {
-                $fields[$field] = is_string($_POST[$field] ?? null) ? trim($_POST[$field]) : '';
-            }
-            $valid = $fields['requester_name'] !== '' && mb_strlen($fields['requester_name']) <= 150
-                && $fields['service_details'] !== '' && mb_strlen($fields['service_details']) <= 5000
-                && active_allowed($departments, $fields['department_id'])
-                && active_allowed($types, $fields['service_type_id'])
-                && active_allowed($handlers, $fields['handler_id'])
-                && preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D', $fields['estimated_cost']);
-            $when = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $fields['requested_at']);
-            $valid = $valid && $when && $when->format('Y-m-d\TH:i') === $fields['requested_at'];
-            if (!$valid) {
-                $_SESSION['active_flash'] = ['error', 'Sila lengkapkan semua medan dengan maklumat yang sah.'];
-            } else {
-                $stmt = $pdo->prepare("UPDATE service_requests SET requester_name=:name, department_id=:department, service_type_id=:type, service_details=:details, estimated_cost=:cost, requested_at=:requested, handler_id=:handler WHERE id=:id AND status IN ('in_progress','ready')");
-                $stmt->execute(['name' => $fields['requester_name'], 'department' => (int)$fields['department_id'], 'type' => (int)$fields['service_type_id'], 'details' => $fields['service_details'], 'cost' => $fields['estimated_cost'], 'requested' => $when->format('Y-m-d H:i:s'), 'handler' => (int)$fields['handler_id'], 'id' => $id]);
-                // rowCount can be zero when data is unchanged; check if the record is still active.
-                $check = $pdo->prepare("SELECT COUNT(*) FROM service_requests WHERE id=? AND status IN ('in_progress','ready')");
-                $check->execute([$id]);
-                $_SESSION['active_flash'] = (int)$check->fetchColumn() === 1 ? ['success', 'Butiran perkhidmatan berjaya disimpan.'] : ['error', 'Rekod sudah selesai atau tidak ditemui.'];
-            }
-        }
-    } catch (Throwable $e) {
-        error_log('Active request update error: ' . $e->getMessage());
-        $_SESSION['active_flash'] = ['error', 'Perubahan gagal disimpan. Sila cuba lagi.'];
-    }
-    active_redirect($safeReturn);
+  } catch (Throwable $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log('Active update: ' . $e->getMessage());
+    $_SESSION['active_flash'] = ['error', $e instanceof InvalidArgumentException ? $e->getMessage() : 'Perubahan gagal disimpan.'];
+  }
+  go_back($safeReturn);
 }
-
 $conditions = ["r.status IN ('in_progress','ready')"];
 $params = [];
 if ($status !== 'all') {
-    $conditions[] = 'r.status=:status';
-    $params['status'] = $status;
+  $conditions[] = 'r.status=:status';
+  $params['status'] = $status;
 }
 if ($search !== '') {
-    $conditions[] = "(r.uid LIKE :uid OR r.requester_name LIKE :requester OR d.name LIKE :department OR t.name LIKE :type OR h.name LIKE :handler)";
-    $needle = '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search) . '%';
-    // MySQL default LIKE escaping with backslash; bound input avoids SQL injection.
-    $needle = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
-    foreach (['uid', 'requester', 'department', 'type', 'handler'] as $key) $params[$key] = $needle;
+  $conditions[] = "(r.uid LIKE :uid OR r.requester_name LIKE :requester OR d.name LIKE :department OR t.name LIKE :type OR h.name LIKE :handler OR EXISTS(SELECT 1 FROM service_request_types srt JOIN service_types st ON st.id=srt.service_type_id WHERE srt.request_id=r.id AND st.name LIKE :other_type))";
+  $needle = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
+  foreach (['uid', 'requester', 'department', 'type', 'handler', 'other_type'] as $key) $params[$key] = $needle;
 }
-$where = implode(' AND ', $conditions);
 $from = ' FROM service_requests r JOIN departments d ON d.id=r.department_id JOIN service_types t ON t.id=r.service_type_id JOIN handlers h ON h.id=r.handler_id ';
 try {
-    $count = $pdo->prepare('SELECT COUNT(*)' . $from . ' WHERE ' . $where);
-    $count->execute($params);
-    $total = (int)$count->fetchColumn();
-    $pages = max(1, (int)ceil($total / 10));
-    $page = min($page, $pages);
-    $offset = ($page - 1) * 10;
-    $stmt = $pdo->prepare('SELECT r.id,r.uid,r.requester_name,r.department_id,r.service_type_id,r.service_details,r.estimated_cost,r.requested_at,r.handler_id,r.status,r.ready_at,d.name AS department_name,t.name AS service_type_name,h.name AS handler_name' . $from . ' WHERE ' . $where . ' ORDER BY r.requested_at DESC,r.id DESC LIMIT 10 OFFSET ' . $offset);
-    $stmt->execute($params);
-    $rows = $stmt->fetchAll();
+  $count = $pdo->prepare('SELECT COUNT(*)' . $from . ' WHERE ' . implode(' AND ', $conditions));
+  $count->execute($params);
+  $total = (int)$count->fetchColumn();
+  $pages = max(1, (int)ceil($total / 10));
+  $page = min($page, $pages);
+  $offset = ($page - 1) * 10;
+  $stmt = $pdo->prepare('SELECT r.*,d.name AS department_name,t.name AS service_type_name,h.name AS handler_name' . $from . ' WHERE ' . implode(' AND ', $conditions) . ' ORDER BY r.requested_at DESC,r.id DESC LIMIT 10 OFFSET ' . $offset);
+  $stmt->execute($params);
+  $rows = fetch_device($pdo, fetch_multi($pdo, $stmt->fetchAll()));
 } catch (PDOException $e) {
-    error_log('Active requests list error: ' . $e->getMessage());
-    http_response_code(503);
-    exit('Senarai permintaan tidak dapat dimuatkan.');
+  error_log($e->getMessage());
+  http_response_code(503);
+  exit('Senarai permintaan tidak dapat dimuatkan. Jalankan migration SQL dahulu.');
 }
+$typeNames = [];
+foreach ($types as $type) $typeNames[(int)$type['id']] = $type['name'];
 $flash = $_SESSION['active_flash'] ?? null;
 unset($_SESSION['active_flash']);
 $created = $_SESSION['service_created_uid'] ?? null;
 unset($_SESSION['service_created_uid']);
-function page_url(int $target, string $q, string $status): string
+function page_url(int $page, string $q, string $status): string
 {
-    return APP_BASE . '/services/index.php?' . http_build_query(['q' => $q, 'status' => $status, 'page' => $target]);
+  return APP_BASE . '/services/index.php?' . http_build_query(['q' => $q, 'status' => $status, 'page' => $page]);
 }
 ?>
 <!doctype html>
 <html lang="ms">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Permintaan Aktif | Perkhidmatan USM</title>
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css">
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css">
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/active-requests.css">
-    <script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script>
-    <script src="<?= APP_BASE ?>/assets/js/active-requests.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Permintaan Aktif | Perkhidmatan USM</title>
+  <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css">
+  <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css">
+  <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/active-requests.css">
+  <script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script>
+  <script src="<?= APP_BASE ?>/assets/js/active-requests.js" defer></script>
 </head>
 
-<body class="workspace active-page">
-    <?php $activePage = 'active';
-    require __DIR__ . '/../includes/sidebar.php'; ?>
-    <div class="active-area">
-        <header class="active-header">
-            <div>
-                <p class="eyebrow">REKOD &amp; JEJAK PERKHIDMATAN</p>
-                <h1>Active Requests</h1>
-            </div>
-            <form action="<?= APP_BASE ?>/logout.php" method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><button class="active-logout" type="submit">Log Keluar ↗</button></form>
-        </header>
-        <main id="main-content" class="active-main" tabindex="-1">
-            <p class="active-intro">Cari permintaan dan buka rekod untuk menyemak atau mengemas kini butiran perkhidmatan.</p>
-            <?php if ($flash): ?><div class="active-alert <?= $flash[0] === 'success' ? 'success' : 'error' ?>" role="status"><?= e($flash[1]) ?></div><?php endif; ?>
-            <?php if ($created): ?><div class="active-alert success" role="status">Rekod baharu berjaya disimpan. UID: <strong><?= e((string)$created) ?></strong></div><?php endif; ?>
-            <form method="get" class="active-filter" action="<?= APP_BASE ?>/services/index.php">
-                <div class="active-search"><label for="q">Cari permintaan</label><input id="q" type="search" name="q" value="<?= e($search) ?>" placeholder="Cari UID, nama staf/pelajar, jabatan, jenis servis atau pengendali"></div>
-                <div><label for="status">Status Perkhidmatan</label><select id="status" name="status">
-                        <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All Active</option>
-                        <option value="in_progress" <?= $status === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
-                        <option value="ready" <?= $status === 'ready' ? 'selected' : '' ?>>Ready</option>
-                    </select></div><button class="active-search-btn" type="submit">Cari</button><a class="active-clear" href="<?= APP_BASE ?>/services/index.php">Reset</a>
-            </form>
-            <div class="active-table-wrap">
-                <table class="active-table">
-                    <thead>
-                        <tr>
-                            <th>UID</th>
-                            <th>NAMA STAF/PELAJAR</th>
-                            <th>TARIKH PERMINTAAN</th>
-                            <th>STATUS PERKHIDMATAN</th>
-                            <th>ANGGARAN KOS</th>
-                            <th>PENGENDALI</th>
-                            <th>TINDAKAN</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($rows as $r): ?><tr>
-                                <td class="active-uid"><?= e($r['uid']) ?></td>
-                                <td><?= e($r['requester_name']) ?></td>
-                                <td><?= e(active_date($r['requested_at'])) ?></td>
-                                <td><span class="active-badge <?= $r['status'] === 'ready' ? 'ready' : 'progress' ?>"><?= $r['status'] === 'ready' ? 'Ready' : 'In Progress' ?></span></td>
-                                <td>RM <?= number_format((float)$r['estimated_cost'], 2) ?></td>
-                                <td><?= e($r['handler_name']) ?></td>
-                                <td>
-                                    <div class="active-actions"><button type="button" class="active-outline details-trigger" data-id="<?= (int)$r['id'] ?>">Details</button><button type="button" class="active-outline edit-trigger" data-id="<?= (int)$r['id'] ?>">Edit</button><?php if ($r['status'] === 'in_progress'): ?><button type="button" class="active-primary ready-trigger" data-id="<?= (int)$r['id'] ?>" data-uid="<?= e($r['uid']) ?>">Ready</button><?php else: ?>
-                                            <a
-                                                href="<?= APP_BASE ?>/payments/index.php?uid=<?= urlencode($r['uid']) ?>"
-                                                class="active-primary active-complete-btn">
-                                                Complete
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                </td>
-                            </tr><?php endforeach; ?>
-                        <?php if (!$rows): ?><tr>
-                                <td colspan="7" class="active-empty">Tiada permintaan aktif dijumpai.</td>
-                            </tr><?php endif; ?></tbody>
-                </table>
-                <div class="active-pagination"><span><?= $total ? ($offset + 1) . '–' . ($offset + count($rows)) : '0' ?> daripada <?= $total ?> rekod</span>
-                    <div><a class="<?= $page === 1 ? 'disabled' : '' ?>" <?= $page > 1 ? 'href="' . e(page_url($page - 1, $search, $status)) . '"' : 'aria-disabled="true"' ?>>Sebelumnya</a><span>Halaman <?= $page ?> / <?= $pages ?></span><a class="<?= $page === $pages ? 'disabled' : '' ?>" <?= $page < $pages ? 'href="' . e(page_url($page + 1, $search, $status)) . '"' : 'aria-disabled="true"' ?>>Seterusnya</a></div>
-                </div>
-            </div>
-        </main>
+<body class="workspace active-page"><?php $activePage = 'active';
+                                    require __DIR__ . '/../includes/sidebar.php'; ?>
+  <div class="active-area">
+    <header class="active-header">
+      <div>
+        <p class="eyebrow">SISTEM PENGURUSAN PERKHIDMATAN IT</p>
+        <h1>Permintaan Aktif</h1>
+      </div>
+      <form action="<?= APP_BASE ?>/logout.php" method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><button class="active-logout" type="submit">Log Keluar ↗</button></form>
+    </header>
+    <main id="main-content" class="active-main" tabindex="-1">
+      <p class="active-intro">Cari permintaan dan buka rekod untuk menyemak atau mengemas kini butiran perkhidmatan.</p>
+      <?php if ($flash): ?><div class="active-alert <?= $flash[0] === 'success' ? 'success' : 'error' ?>" role="status"><?= e($flash[1]) ?></div><?php endif; ?>
+      <?php if ($created): ?><div class="active-alert success" role="status">Rekod baharu berjaya disimpan. UID: <strong><?= e((string)$created) ?></strong></div><?php endif; ?>
+      <form method="get" class="active-filter" action="<?= APP_BASE ?>/services/index.php">
+        <div class="active-search"><label for="q">Cari permintaan</label><input id="q" type="search" name="q" value="<?= e($search) ?>" placeholder="Cari UID, nama staf/pelajar, jabatan, jenis servis atau pengendali"></div>
+        <div><label for="status">Status Perkhidmatan</label><select id="status" name="status">
+            <option value="all">All Active</option>
+            <option value="in_progress" <?= $status === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
+            <option value="ready" <?= $status === 'ready' ? 'selected' : '' ?>>Ready</option>
+          </select></div><button class="active-search-btn" type="submit">Cari</button><a class="active-clear" href="<?= APP_BASE ?>/services/index.php">Reset</a>
+      </form>
+      <div class="active-table-wrap">
+        <table class="active-table">
+          <thead>
+            <tr>
+              <th>UID</th>
+              <th>NAMA STAF/PELAJAR</th>
+              <th>TARIKH PERMINTAAN</th>
+              <th>STATUS PERKHIDMATAN</th>
+              <th>ANGGARAN KOS</th>
+              <th>PENGENDALI</th>
+              <th>TINDAKAN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($rows as $r): ?><tr>
+                <td class="active-uid"><?= e($r['uid']) ?></td>
+                <td><?= e($r['requester_name']) ?></td>
+                <td><?= e(display_date($r['requested_at'])) ?></td>
+                <td><span class="active-badge <?= $r['status'] === 'ready' ? 'ready' : 'progress' ?>"><?= $r['status'] === 'ready' ? 'Ready' : 'In Progress' ?></span></td>
+                <td>RM <?= number_format((float)$r['estimated_cost'], 2) ?></td>
+                <td><?= e($r['handler_name']) ?></td>
+                <td>
+                  <div class="active-actions"><button type="button" class="active-outline details-trigger" data-id="<?= (int)$r['id'] ?>">Details</button><button type="button" class="active-outline edit-trigger" data-id="<?= (int)$r['id'] ?>">Edit</button><?php if ($r['status'] === 'in_progress'): ?><button type="button" class="active-primary ready-trigger" data-id="<?= (int)$r['id'] ?>" data-uid="<?= e($r['uid']) ?>">Ready</button><?php else: ?><a href="<?= APP_BASE ?>/payments/index.php?uid=<?= urlencode($r['uid']) ?>" class="active-primary active-complete-btn">Complete</a><?php endif; ?></div>
+                </td>
+              </tr><?php endforeach; ?>
+            <?php if (!$rows): ?><tr>
+                <td colspan="7" class="active-empty">Tiada permintaan aktif dijumpai.</td>
+              </tr><?php endif; ?></tbody>
+        </table>
+        <div class="active-pagination"><span><?= $total ? ($offset + 1) . '–' . ($offset + count($rows)) : '0' ?> daripada <?= $total ?> rekod</span>
+          <div><a class="<?= $page === 1 ? 'disabled' : '' ?>" <?= $page > 1 ? 'href="' . e(page_url($page - 1, $search, $status)) . '"' : 'aria-disabled="true"' ?>>Sebelumnya</a><span>Halaman <?= $page ?> / <?= $pages ?></span><a class="<?= $page === $pages ? 'disabled' : '' ?>" <?= $page < $pages ? 'href="' . e(page_url($page + 1, $search, $status)) . '"' : 'aria-disabled="true"' ?>>Seterusnya</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <?php foreach ($rows as $r): ?><template id="active-data-<?= (int)$r['id'] ?>">
+      <div class="active-detail-grid">
+        <div><small>UID</small><strong><?= e($r['uid']) ?></strong></div>
+        <div><small>Status</small><strong><?= $r['status'] === 'ready' ? 'Ready' : 'In Progress' ?></strong></div>
+        <div><small>Nama Staf/Pelajar</small><strong><?= e($r['requester_name']) ?></strong></div>
+        <div><small>Jabatan/Pusat Pengajian</small><strong><?= e($r['department_name']) ?></strong></div>
+        <div><small>Telefon</small><strong><?= e($r['requester_phone'] ?: '—') ?></strong></div>
+        <div><small>Emel</small><strong><?= e($r['requester_email'] ?: '—') ?></strong></div>
+        <div><small>Pemilikan</small><strong><?= ($r['device_ownership'] ?? '') === 'usm' ? 'Aset USM' : (($r['device_ownership'] ?? '') === 'personal' ? 'Peribadi' : '—') ?></strong></div>
+        <div><small>Jenis Peranti</small><strong><?= e(($r['device_type'] ?? '') === 'Other' ? $r['device_type_other'] : ($r['device_type'] ?: '—')) ?></strong></div>
+        <div><small>Jenama / Model</small><strong><?= e(trim(($r['device_brand'] ?? '') . ' ' . ($r['device_model'] ?? '')) ?: '—') ?></strong></div>
+        <div><small>Serial Number</small><strong><?= e($r['device_serial'] ?: '—') ?></strong></div>
+        <div><small>No. Aset USM</small><strong><?= e($r['asset_number'] ?: '—') ?></strong></div>
+        <div><small>Aksesori</small><strong><?= e(implode(', ', $r['accessories']) ?: '—') ?></strong></div>
+        <div><small>Keadaan Peranti</small><strong><?= e($r['device_condition'] ?: '—') ?></strong></div>
+        <div class="active-full"><small>Catatan Keadaan</small>
+          <p><?= nl2br(e($r['condition_notes'] ?: '—')) ?></p>
+        </div>
+        <div class="active-full"><small>Jenis Perkhidmatan</small><strong><?= e(implode(', ', array_map(static fn($id) => $typeNames[$id] ?? 'Tidak diketahui', $r['service_type_ids']))) ?></strong></div>
+        <div><small>Pengendali Staf IT</small><strong><?= e($r['handler_name']) ?></strong></div>
+        <div><small>Anggaran Kos</small><strong>RM <?= number_format((float)$r['estimated_cost'], 2) ?></strong></div>
+        <div><small>Tarikh/Masa Permintaan</small><strong><?= e(display_date($r['requested_at'], true)) ?></strong></div>
+        <div><small>Tarikh/Masa Ready</small><strong><?= e(display_date($r['ready_at'], true)) ?></strong></div>
+        <div class="active-full"><small>Butiran Perkhidmatan</small>
+          <p><?= nl2br(e($r['service_details'])) ?></p>
+        </div>
+        <?php foreach ($r['hardware'] as $i => $h): ?><div class="active-full"><small>Perkakasan <?= $i + 1 ?></small><strong><?= e($h['hardware_type']) ?> — <?= $h['work_type'] === 'replacement' ? 'Penukaran' : 'Pemasangan baharu' ?></strong>
+            <p>Model Lama: <?= e($h['old_model'] ?: '—') ?> | Model Baharu: <?= e($h['new_model']) ?></p>
+            <p>No. Siri Lama: <?= e($h['old_serial'] ?: '—') ?> | No. Siri Baharu: <?= e($h['new_serial'] ?: '—') ?></p>
+            <p>Catatan: <?= e($h['notes'] ?: '—') ?></p>
+          </div><?php endforeach; ?>
+      </div>
+    </template><?php endforeach; ?>
+  <dialog id="details-dialog" class="active-dialog">
+    <div class="active-dialog-head">
+      <h2>Butiran Permintaan</h2><button type="button" class="dialog-close" aria-label="Tutup">×</button>
     </div>
-    <?php foreach ($rows as $r): ?><template id="active-data-<?= (int)$r['id'] ?>">
-            <div class="active-detail-grid">
-                <div><small>UID</small><strong><?= e($r['uid']) ?></strong></div>
-                <div><small>Status</small><strong><?= $r['status'] === 'ready' ? 'Ready' : 'In Progress' ?></strong></div>
-                <div><small>Nama Staf/Pelajar</small><strong><?= e($r['requester_name']) ?></strong></div>
-                <div><small>Jabatan/Pusat Pengajian</small><strong><?= e($r['department_name']) ?></strong></div>
-                <div><small>Jenis Perkhidmatan</small><strong><?= e($r['service_type_name']) ?></strong></div>
-                <div><small>Pengendali Staf IT</small><strong><?= e($r['handler_name']) ?></strong></div>
-                <div><small>Anggaran Kos</small><strong>RM <?= number_format((float)$r['estimated_cost'], 2) ?></strong></div>
-                <div><small>Tarikh/Masa Permintaan</small><strong><?= e(active_date($r['requested_at'], true)) ?></strong></div>
-                <div><small>Tarikh/Masa Ready</small><strong><?= e(active_date($r['ready_at'], true)) ?></strong></div>
-                <div class="active-full"><small>Butiran Perkhidmatan</small>
-                    <p><?= nl2br(e($r['service_details'])) ?></p>
-                </div>
-            </div>
-        </template><?php endforeach; ?>
-    <dialog id="details-dialog" class="active-dialog">
-        <div class="active-dialog-head">
-            <h2>Butiran Permintaan</h2><button type="button" class="dialog-close" aria-label="Tutup">×</button>
+    <div id="details-body"></div>
+    <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Tutup</button></div>
+  </dialog>
+  <dialog id="edit-dialog" class="active-dialog">
+    <div class="active-dialog-head">
+      <h2>Edit Rekod Perkhidmatan</h2><button type="button" class="dialog-close" aria-label="Tutup">×</button>
+    </div>
+    <form id="edit-form" method="post" action="<?= APP_BASE ?>/services/index.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="edit"><input type="hidden" name="id" id="edit-id"><input type="hidden" name="return" value="<?= e($back) ?>">
+      <div class="active-edit-grid">
+        <div><label for="edit-name">Nama Staf/Pelajar *</label><input id="edit-name" name="requester_name" maxlength="150" required></div>
+        <div><label for="edit-department">Jabatan/Pusat Pengajian *</label><select id="edit-department" name="department_id" required><?php foreach ($departments as $item): ?><option value="<?= (int)$item['id'] ?>"><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
+        <div><label>No. Telefon (Pilihan)</label><input name="requester_phone" maxlength="30"></div>
+        <div><label>Emel (Pilihan)</label><input type="email" name="requester_email" maxlength="190"></div>
+      </div>
+      <div class="record-section-heading"><span>02</span>
+        <h3>Maklumat Peranti</h3>
+      </div>
+      <div class="record-grid device-grid">
+        <div><label>Pemilikan Peranti *</label><select name="device_ownership" data-ownership required>
+            <option value="usm">Aset USM</option>
+            <option value="personal">Peribadi</option>
+          </select></div>
+        <div><label>Jenis Peranti *</label><select name="device_type" data-device-type required>
+            <option value="">Pilih jenis</option>
+            <option value="Laptop">Laptop</option>
+            <option value="Desktop">Desktop</option>
+            <option value="Printer">Printer</option>
+            <option value="Other">Lain-lain</option>
+          </select></div>
+        <div data-other-device hidden><label>Nyatakan Jenis Peranti *</label><input name="device_type_other" maxlength="100"></div>
+        <div><label>Jenama *</label><input name="device_brand" maxlength="120" required placeholder="Contoh: Dell"></div>
+        <div><label>Model *</label><input name="device_model" maxlength="150" required placeholder="Contoh: Latitude 5420"></div>
+        <div><label>Serial Number (Jika ada)</label><input name="device_serial" maxlength="150"></div>
+        <div data-asset-field><label>No. Aset USM (Jika ada)</label><input name="asset_number" maxlength="150"></div>
+        <div class="record-full"><label>Aksesori Diterima (Pilihan)</label>
+          <div class="device-accessories"><label><input type="checkbox" name="accessories[]" value="Charger"> Charger</label><label><input type="checkbox" name="accessories[]" value="Mouse"> Mouse</label><label><input type="checkbox" name="accessories[]" value="Beg Laptop"> Beg Laptop</label><label><input type="checkbox" name="accessories[]" value="Lain-lain" data-other-accessory> Lain-lain</label></div><input name="accessory_other" data-accessory-other maxlength="255" placeholder="Nyatakan aksesori lain" hidden>
         </div>
-        <div id="details-body"></div>
-        <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Tutup</button></div>
-    </dialog>
-    <dialog id="edit-dialog" class="active-dialog">
-        <div class="active-dialog-head">
-            <h2>Edit Rekod Perkhidmatan</h2><button type="button" class="dialog-close" aria-label="Tutup">×</button>
+        <div><label>Keadaan Peranti</label><select name="device_condition">
+            <option value="unchecked">Tidak Diperiksa</option>
+            <option value="good">Baik</option>
+            <option value="damaged">Kerosakan Fizikal</option>
+            <option value="off">Tidak Dapat Dihidupkan</option>
+          </select></div>
+        <div><label>Catatan Keadaan (Pilihan)</label><textarea name="condition_notes" maxlength="1000" rows="2"></textarea></div>
+      </div>
+      <div class="active-edit-grid">
+        <div class="active-full"><label>Jenis Perkhidmatan *</label><?php $selectedTypeIds = []; ?><?php /* Include inside a form. Set $multiPrefix to 'edit-' for edit dialog. */ ?>
+          <div class="service-multi" data-service-multi data-hardware-id="<?= (int)($hardwareTypeId ?? 0) ?>">
+            <details>
+              <summary data-service-summary>Pilih jenis perkhidmatan</summary>
+              <div class="service-options">
+                <?php foreach ($types as $type): ?>
+                  <label><input type="checkbox" data-service-check data-label="<?= e($type['name']) ?>" name="service_type_ids[]" value="<?= (int)$type['id'] ?>" <?= in_array((int)$type['id'], $selectedTypeIds ?? [], true) ? 'checked' : '' ?>><?= e($type['name']) ?></label>
+                <?php endforeach; ?>
+              </div>
+            </details>
+            <section class="hardware-section" data-hardware-section hidden>
+              <h3>Maklumat Penukaran/Pemasangan Perkakasan</h3>
+              <div data-hardware-list></div>
+              <button type="button" data-add-hardware>+ Tambah Perkakasan</button>
+            </section>
+          </div>
         </div>
-        <form id="edit-form" method="post" action="<?= APP_BASE ?>/services/index.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="edit"><input type="hidden" name="id" id="edit-id"><input type="hidden" name="return" value="<?= e($back) ?>">
-            <div class="active-edit-grid">
-                <div><label for="edit-name">Nama Staf/Pelajar *</label><input id="edit-name" name="requester_name" maxlength="150" required></div>
-                <div><label for="edit-department">Jabatan/Pusat Pengajian *</label><select id="edit-department" name="department_id" required><?php foreach ($departments as $item): ?><option value="<?= (int)$item['id'] ?>"><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
-                <div class="active-full"><label for="edit-type">Jenis Perkhidmatan *</label><select id="edit-type" name="service_type_id" required><?php foreach ($types as $item): ?><option value="<?= (int)$item['id'] ?>"><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
-                <div class="active-full"><label for="edit-details">Butiran Perkhidmatan *</label><textarea id="edit-details" name="service_details" rows="4" maxlength="5000" required></textarea></div>
-                <div><label for="edit-cost">Anggaran Kos (RM) *</label><input id="edit-cost" name="estimated_cost" type="number" min="0" max="99999999.99" step="0.01" required></div>
-                <div><label for="edit-date">Tarikh/Masa Permintaan *</label><input id="edit-date" name="requested_at" type="datetime-local" required></div>
-                <div class="active-full"><label for="edit-handler">Pengendali Staf IT *</label><select id="edit-handler" name="handler_id" required><?php foreach ($handlers as $item): ?><option value="<?= (int)$item['id'] ?>"><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
-            </div>
-            <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Batal</button><button class="active-primary" type="submit">Simpan Perubahan</button></div>
-        </form>
-    </dialog>
-    <dialog id="ready-dialog" class="active-dialog active-confirm">
-        <div class="active-dialog-head">
-            <h2>Sahkan Status Ready</h2><button type="button" class="dialog-close" aria-label="Tutup">×</button>
+        <div class="active-full"><label for="edit-details">Butiran Perkhidmatan (Pilihan)</label><textarea id="edit-details" name="service_details" rows="4" maxlength="5000"></textarea></div>
+        <div><label for="edit-cost">Anggaran Kos (RM) *</label><input id="edit-cost" name="estimated_cost" type="number" min="0" max="99999999.99" step="0.01" required></div>
+        <div><label for="edit-date">Tarikh/Masa Permintaan *</label><input id="edit-date" name="requested_at" type="datetime-local" required></div>
+        <div class="active-full"><label for="edit-handler">Pengendali Staf IT *</label><select id="edit-handler" name="handler_id" required><?php foreach ($handlers as $item): ?><option value="<?= (int)$item['id'] ?>"><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
+      </div>
+      <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Batal</button><button class="active-primary" type="submit">Simpan Perubahan</button></div>
+    </form>
+  </dialog>
+  <dialog id="ready-dialog" class="active-dialog active-confirm">
+    <div class="active-dialog-head">
+      <h2>Sahkan Status Ready</h2><button type="button" class="dialog-close" aria-label="Tutup">×</button>
+    </div>
+    <p>Adakah anda pasti perkhidmatan <strong id="ready-uid"></strong> telah siap dan sedia untuk diambil?</p>
+    <form method="post" action="<?= APP_BASE ?>/services/index.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="ready"><input type="hidden" name="id" id="ready-id"><input type="hidden" name="return" value="<?= e($back) ?>">
+      <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Batal</button><button type="submit" class="active-primary">Ya, Tandakan Ready</button></div>
+    </form>
+  </dialog>
+  <template id="hardware-row-template">
+    <div class="hardware-row">
+      <div class="hardware-grid">
+        <div><label>Jenis Kerja *</label><select data-field="work_type" required>
+            <option value="replacement">Penukaran perkakasan</option>
+            <option value="installation">Pemasangan baharu</option>
+          </select></div>
+        <div><label>Jenis Perkakasan *</label><input data-field="hardware_type" maxlength="120" placeholder="RAM, SSD, HDD..." required></div>
+        <div data-old-fields style="display:contents">
+          <div><label>Model Lama</label><input data-field="old_model" maxlength="255"></div>
+          <div><label>No. Siri Lama</label><input data-field="old_serial" maxlength="150"></div>
         </div>
-        <p>Adakah anda pasti perkhidmatan <strong id="ready-uid"></strong> telah siap dan sedia untuk diambil?</p>
-        <form method="post" action="<?= APP_BASE ?>/services/index.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="ready"><input type="hidden" name="id" id="ready-id"><input type="hidden" name="return" value="<?= e($back) ?>">
-            <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Batal</button><button type="submit" class="active-primary">Ya, Tandakan Ready</button></div>
-        </form>
-    </dialog>
-    <script type="application/json" id="active-records-json">
-        <?= json_encode(array_column($rows, null, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?>
-    </script>
+        <div><label>Model Baharu *</label><input data-field="new_model" maxlength="255" required></div>
+        <div><label>No. Siri Baharu</label><input data-field="new_serial" maxlength="150"></div>
+        <div style="grid-column:1/-1"><label>Catatan</label><textarea data-field="notes" maxlength="1000" rows="2"></textarea></div>
+      </div><button type="button" data-remove-hardware>Buang Perkakasan</button>
+    </div>
+  </template>
+
+  <script type="application/json" id="active-records-json">
+    <?= json_encode(array_column($rows, null, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?>
+  </script>
 </body>
 
 </html>

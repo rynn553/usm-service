@@ -1,143 +1,143 @@
 .payment-panel {
-    padding: 26px;
-    border: 1px solid #e5deed;
-    border-radius: 18px;
-    background: #fff;
+  padding: 26px;
+  border: 1px solid #e5deed;
+  border-radius: 18px;
+  background: #fff;
 }
 
 .payment-panel h2 {
-    margin: 0 0 10px;
-    color: #351559;
+  margin: 0 0 10px;
+  color: #351559;
 }
 
 .payment-panel p {
-    margin: 0;
-    color: #64708a;
-    line-height: 1.6;
+  margin: 0;
+  color: #64708a;
+  line-height: 1.6;
 }
 
 .uid-search {
-    display: flex;
-    align-items: flex-end;
-    gap: 14px;
-    margin-top: 24px;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-top: 24px;
 }
 
 .uid-field {
-    flex: 1;
+  flex: 1;
 }
 
 .uid-field label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
 }
 
 .uid-field input {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid #d9cfe4;
-    border-radius: 9px;
-    font: inherit;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d9cfe4;
+  border-radius: 9px;
+  font: inherit;
 }
 
 .payment-primary {
-    padding: 12px 24px;
-    border: 1px solid #6026a4;
-    border-radius: 9px;
-    background: #6026a4;
-    color: #fff;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
+  padding: 12px 24px;
+  border: 1px solid #6026a4;
+  border-radius: 9px;
+  background: #6026a4;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .payment-primary:hover {
-    background: #4d1d86;
+  background: #4d1d86;
 }
 
 .uid-field input:focus-visible,
 .payment-primary:focus-visible {
-    outline: 2px solid #6026a4;
-    outline-offset: 3px;
+  outline: 2px solid #6026a4;
+  outline-offset: 3px;
 }
 
 @media (max-width: 600px) {
-    .uid-search {
-        flex-direction: column;
-        align-items: stretch;
-    }
+  .uid-search {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .payment-result-title {
-    margin-top: 30px;
-    padding-top: 24px;
-    border-top: 1px solid #e5deed;
-    color: #351559;
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid #e5deed;
+  color: #351559;
 }
 
 .payment-details {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 22px;
-    margin: 24px 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin: 24px 0;
 }
 
 .payment-details dt {
-    margin-bottom: 6px;
-    color: #64708a;
-    font-size: 14px;
+  margin-bottom: 6px;
+  color: #64708a;
+  font-size: 14px;
 }
 
 .payment-details dd {
-    margin: 0;
-    font-weight: 600;
-    line-height: 1.6;
-    overflow-wrap: anywhere;
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .payment-wide {
-    grid-column: 1 / -1;
+  grid-column: 1 / -1;
 }
 
 .payment-panel .payment-message {
-    margin-top: 20px;
-    padding: 14px 16px;
-    border-radius: 9px;
-    background: #f3eef9;
-    color: #351559;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 9px;
+  background: #f3eef9;
+  color: #351559;
 }
 
 .payment-panel .payment-message.error {
-    background: #fff0f0;
-    color: #a12626;
+  background: #fff0f0;
+  color: #a12626;
 }
 
 @media (max-width: 600px) {
-    .payment-details {
-        grid-template-columns: 1fr;
-    }
+  .payment-details {
+    grid-template-columns: 1fr;
+  }
 }
 .completion-form {
-    margin-top: 20px;
+  margin-top: 20px;
 }
 
 .pickup-check {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 600;
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .pickup-check input {
-    width: 18px;
-    height: 18px;
-    accent-color: #6026a4;
+  width: 18px;
+  height: 18px;
+  accent-color: #6026a4;
 }
 
 .payment-panel .payment-message.success {
-    background: #d8f4e8;
-    color: #087454;
+  background: #d8f4e8;
+  color: #087454;
 }
