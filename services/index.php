@@ -164,7 +164,7 @@ function page_url(int $target, string $q, string $status): string
             <form method="get" class="active-filter" action="<?= APP_BASE ?>/services/index.php">
                 <div class="active-search"><label for="q">Cari permintaan</label><input id="q" type="search" name="q" value="<?= e($search) ?>" placeholder="Cari UID, nama staf/pelajar, jabatan, jenis servis atau pengendali"></div>
                 <div><label for="status">Status Perkhidmatan</label><select id="status" name="status">
-                        <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>Semua Aktif</option>
+                        <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All Active</option>
                         <option value="in_progress" <?= $status === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
                         <option value="ready" <?= $status === 'ready' ? 'selected' : '' ?>>Ready</option>
                     </select></div><button class="active-search-btn" type="submit">Cari</button><a class="active-clear" href="<?= APP_BASE ?>/services/index.php">Reset</a>
