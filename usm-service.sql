@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 19, 2026 at 04:03 AM
+-- Generation Time: Oct 21, 2026 at 06:21 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -58,8 +58,14 @@ CREATE TABLE `handlers` (
 --
 
 INSERT INTO `handlers` (`id`, `name`, `is_active`) VALUES
-(1, 'Arina', 1),
-(2, 'Izzah', 1);
+(1, 'Shafiza', 1),
+(2, 'Zairil', 1),
+(3, 'Salleh', 1),
+(4, 'Nazir', 1),
+(5, 'Abdillah', 1),
+(6, 'Fauzi', 1),
+(7, 'Hisham', 1),
+(8, 'Amin', 1);
 
 -- --------------------------------------------------------
 
@@ -97,7 +103,8 @@ INSERT INTO `service_requests` (`id`, `uid`, `requester_name`, `department_id`, 
 (1, 'USM-2026-DEMO001', 'Pemohon Demo 1', 1, 1, 'Contoh servis format PC.', 50.00, '2026-10-12 09:00:00', 1, 'in_progress', NULL, NULL, NULL, NULL, NULL, 1, NULL, '2026-10-19 08:53:53', '2026-10-19 08:53:53'),
 (2, 'USM-2026-DEMO002', 'Pemohon Demo 2', 2, 2, 'Contoh pemasangan aplikasi.', 20.00, '2026-10-12 10:00:00', 2, 'ready', '2026-10-13 14:00:00', NULL, NULL, NULL, NULL, 1, NULL, '2026-10-19 08:53:53', '2026-10-19 08:53:53'),
 (3, 'USM-2026-DEMO003', 'Pemohon Demo 3', 1, 3, 'Contoh pemeriksaan masalah PC.', 30.00, '2026-10-10 11:00:00', 1, 'completed', '2026-10-11 14:00:00', '2026-10-12 15:00:00', '2026-10-12', 'DEMO-REF-003', '2026-10-12 15:00:00', 1, 1, '2026-10-19 08:53:53', '2026-10-19 08:53:53'),
-(4, 'USM-2026-DEMO004', 'Pemohon Demo 4', 2, 1, 'Contoh permintaan September, selesai Oktober.', 50.00, '2026-09-30 09:00:00', 2, 'completed', '2026-10-01 12:00:00', '2026-10-02 10:00:00', '2026-10-02', 'DEMO-REF-004', '2026-10-02 10:00:00', 1, 1, '2026-10-19 08:53:53', '2026-10-19 08:53:53');
+(4, 'USM-2026-DEMO004', 'Pemohon Demo 4', 2, 1, 'Contoh permintaan September, selesai Oktober.', 50.00, '2026-09-30 09:00:00', 2, 'completed', '2026-10-01 12:00:00', '2026-10-02 10:00:00', '2026-10-02', 'DEMO-REF-004', '2026-10-02 10:00:00', 1, 1, '2026-10-19 08:53:53', '2026-10-19 08:53:53'),
+(6, 'USM-2026-81C3619DE3', 'Arina', 1, 3, 'Install SPSS error', 10.00, '2026-10-20 12:15:00', 1, 'in_progress', NULL, NULL, NULL, NULL, NULL, 1, NULL, '2026-10-20 12:17:07', '2026-10-20 12:17:07');
 
 -- --------------------------------------------------------
 
@@ -116,9 +123,13 @@ CREATE TABLE `service_types` (
 --
 
 INSERT INTO `service_types` (`id`, `name`, `is_active`) VALUES
-(1, 'Format PC', 1),
-(2, 'Install Apps', 1),
-(3, 'Troubleshooting', 1);
+(1, 'Pemasangan Sistem Pengoperasian Komputer', 1),
+(2, 'Pemasangan Perisian Microsoft Office', 1),
+(3, 'Pemasangan Perisian Antivirus/SPSS', 1),
+(4, 'Perkhidmatan Merungkai Isu Komputer', 1),
+(5, 'Perkhidmatan Imbasan dan Pembersihan Virus Komputer', 1),
+(6, 'Perkhidmatan Konfigurasi Wi-Fi', 1),
+(7, 'Perkhidmatan Penukaran/ Pemasangan Perkakasan Komputer', 1);
 
 -- --------------------------------------------------------
 
@@ -202,19 +213,19 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT for table `handlers`
 --
 ALTER TABLE `handlers`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `service_requests`
 --
 ALTER TABLE `service_requests`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `service_types`
 --
 ALTER TABLE `service_types`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `users`
