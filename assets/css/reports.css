@@ -1,0 +1,226 @@
+.report-intro h2 {
+    margin: 0 0 8px;
+    color: #351559;
+}
+
+.report-intro p {
+    margin: 0;
+    color: #64708a;
+    line-height: 1.6;
+}
+
+.report-filter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 18px;
+    margin: 24px 0;
+    padding: 24px;
+    border: 1px solid #e5deed;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.report-filter > div {
+    min-width: 0;
+}
+
+.report-filter label {
+    display: block;
+    margin-bottom: 9px;
+    color: #51455f;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.report-filter select,
+.report-filter input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 1px solid #e2d9eb;
+    border-radius: 10px;
+    background: #fff;
+    color: #351559;
+    font: inherit;
+}
+
+.report-button {
+    min-height: 48px;
+    padding: 12px 22px;
+    border: 0;
+    border-radius: 10px;
+    background: #6026a4;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.report-button:hover {
+    background: #4d1d86;
+}
+
+.report-filter input:focus-visible,
+.report-filter select:focus-visible,
+.report-button:focus-visible {
+    outline: 2px solid #6026a4;
+    outline-offset: 3px;
+}
+
+.report-period h2 {
+    margin: 28px 0 16px;
+    font-size: 21px;
+}
+
+.report-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+}
+
+.report-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px;
+    border: 1px solid #e5deed;
+    border-top: 3px solid #6026a4;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.report-stat span,
+.report-stat small {
+    color: #64708a;
+}
+
+.report-stat strong {
+    color: #351559;
+    font-size: 32px;
+    overflow-wrap: anywhere;
+}
+
+.report-table-panel {
+    margin-top: 24px;
+    overflow: hidden;
+    border: 1px solid #e5deed;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.report-table-panel table {
+    min-width: 1100px;
+}
+
+.report-table-panel td,
+.report-table-panel th {
+    padding: 18px 16px;
+    line-height: 1.6;
+}
+
+.report-table-panel tbody tr:hover {
+    background: #faf7fd;
+}
+
+.report-table-panel tfoot {
+    background: #f7f5fa;
+    color: #351559;
+}
+
+.report-nowrap,
+.report-table-panel .uid {
+    white-space: nowrap;
+}
+
+.report-empty {
+    padding: 30px;
+    text-align: center;
+    color: #64708a;
+}
+
+.report-error {
+    padding: 16px;
+    border-radius: 9px;
+    background: #fff0f0;
+    color: #a12626;
+}
+
+@media (max-width: 650px) {
+    .report-filter,
+    .report-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .report-filter {
+        padding: 18px;
+    }
+}
+.report-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.report-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 48px;
+    padding: 12px 20px;
+    border: 1px solid #e2d9eb;
+    border-radius: 10px;
+    background: #fff;
+    color: #6026a4;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.report-reset:hover {
+    background: #f5f0fa;
+}
+
+.report-reset:focus-visible {
+    outline: 2px solid #6026a4;
+    outline-offset: 3px;
+}
+.report-period {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 28px 0 18px;
+}
+
+.report-period h2 {
+    margin: 0;
+}
+
+.report-export {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 10px 18px;
+    border: 1px solid #6026a4;
+    border-radius: 10px;
+    background: #fff;
+    color: #6026a4;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.report-export:hover {
+    background: #f3eef9;
+}
+
+.report-export:focus-visible {
+    outline: 2px solid #6026a4;
+    outline-offset: 3px;
+}
