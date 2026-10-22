@@ -9,7 +9,7 @@ require __DIR__ . '/service_multi.php';
 $errors = [];
 $selectedTypeIds = [];
 $postedHardware = [];
-$old = ['requester_name'=>'','department_id'=>'','service_type_id'=>'','service_details'=>'','estimated_cost'=>'0.00','requested_at'=>date('Y-m-d\TH:i'),'handler_id'=>''];
+$old = ['requester_name'=>'','department_id'=>'','service_type_id'=>'','service_details'=>'','estimated_cost'=>'','requested_at'=>date('Y-m-d\TH:i'),'handler_id'=>''];
 try {
     $departments = $pdo->query('SELECT id,name FROM departments WHERE is_active=1 ORDER BY name')->fetchAll();
     $types = $pdo->query('SELECT id,name FROM service_types WHERE is_active=1 ORDER BY id')->fetchAll();
@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($key === 'service_type_id') continue;
         $old[$key] = is_string($_POST[$key] ?? null) ? trim($_POST[$key]) : '';
     }
+    if ($old['estimated_cost'] === '') $old['estimated_cost'] = '0.00'; // Kos kosong dianggap RM0.00
     if (!valid_csrf()) $errors[] = 'Sesi borang tidak sah. Muat semula halaman.';
     if ($old['requester_name']==='' || mb_strlen($old['requester_name'])>150) $errors[]='Nama staf/pelajar wajib diisi (maksimum 150 aksara).';
     $allowed = function(array $items, string $id): bool {
@@ -49,23 +50,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$allowed($handlers,$old['handler_id'])) $errors[]='Sila pilih pengendali staf IT yang sah.';
     if (!$errors) {
         try {
+            // Serialize UID allocation across simultaneous service submissions.
+            // Existing legacy UIDs are preserved; only all-digit UIDs count.
+            $lockName = 'usm_service_numeric_uid_v1';
+            $lockStmt = $pdo->prepare('SELECT GET_LOCK(:lock_name, 10)');
+            $lockStmt->execute(['lock_name'=>$lockName]);
+            if ((int)$lockStmt->fetchColumn() !== 1) {
+                throw new RuntimeException('Tidak dapat mengunci penjana UID. Sila cuba lagi.');
+            }
+            $uidLockHeld = true;
+            $maxUid = $pdo->query("SELECT COALESCE(MAX(CAST(uid AS UNSIGNED)), 0) FROM service_requests WHERE uid REGEXP '^[0-9]+$'")->fetchColumn();
+            $uid = (string)((int)$maxUid + 1);
+            if (strlen($uid) > 40) throw new RuntimeException('Had UID telah dicapai.');
             $pdo->beginTransaction();
             $stmt = $pdo->prepare('INSERT INTO service_requests (uid,requester_name,department_id,service_type_id,service_details,estimated_cost,requested_at,handler_id,status,created_by) VALUES (:uid,:requester_name,:department_id,:service_type_id,:service_details,:estimated_cost,:requested_at,:handler_id,\'in_progress\',:created_by)');
-            $saved = false;
-            for ($attempt=0; $attempt<4 && !$saved; $attempt++) {
-                $uid = 'USM-'.$when->format('Y').'-'.strtoupper(bin2hex(random_bytes(5)));
-                try {
-                    $stmt->execute(['uid'=>$uid,'requester_name'=>$old['requester_name'],'department_id'=>(int)$old['department_id'],'service_type_id'=>(int)$old['service_type_id'],'service_details'=>$old['service_details'],'estimated_cost'=>number_format((float)$old['estimated_cost'],2,'.',''),'requested_at'=>$when->format('Y-m-d H:i:s'),'handler_id'=>(int)$old['handler_id'],'created_by'=>(int)$_SESSION['user_id']]);
-                    $saved = true;
-                } catch (PDOException $ex) {
-                    if ($ex->getCode()!=='23000' || !str_contains($ex->getMessage(),'uid')) throw $ex;
-                }
-            }
-            if (!$saved) throw new RuntimeException('Tidak dapat menjana UID unik.');
-             $requestId=(int)$pdo->lastInsertId();
+            $stmt->execute(['uid'=>$uid,'requester_name'=>$old['requester_name'],'department_id'=>(int)$old['department_id'],'service_type_id'=>(int)$old['service_type_id'],'service_details'=>$old['service_details'],'estimated_cost'=>number_format((float)$old['estimated_cost'],2,'.',''),'requested_at'=>$when->format('Y-m-d H:i:s'),'handler_id'=>(int)$old['handler_id'],'created_by'=>(int)$_SESSION['user_id']]);
+            $requestId=(int)$pdo->lastInsertId();
             save_multi($pdo,$requestId,$selectedTypeIds,$hardwareRows);
             save_device($pdo,$requestId,$deviceData);
             $pdo->commit();
+            $release = $pdo->prepare('SELECT RELEASE_LOCK(:lock_name)');
+            $release->execute(['lock_name'=>$lockName]);
+            $uidLockHeld = false;
             $_SESSION['service_created_uid']=$uid;
             header('Location: '.APP_BASE.'/services/index.php?created=1',true,303);
             exit;
@@ -73,6 +79,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($pdo->inTransaction()) $pdo->rollBack();
             error_log('Create service failed: '.$ex->getMessage());
             $errors[]='Rekod tidak dapat disimpan. Sila cuba lagi atau hubungi penyelenggara.';
+        } finally {
+            if (!empty($uidLockHeld)) {
+                try {
+                    $release = $pdo->prepare('SELECT RELEASE_LOCK(:lock_name)');
+                    $release->execute(['lock_name'=>$lockName]);
+                } catch (Throwable $releaseError) {
+                    error_log('Release UID lock failed: '.$releaseError->getMessage());
+                }
+            }
         }
     }
 }
@@ -160,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="record-full"><label for="handler_id">Nama Pengendali Staf IT *</label><select id="handler_id" name="handler_id" required><option value="">Pilih pengendali staf IT</option><?php foreach($handlers as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id']===$old['handler_id']?'selected':'' ?>><?= e($item['name']) ?></option><?php endforeach; ?></select></div></div>
 </section>
 <div class="wizard-review" id="wizard-review" hidden aria-live="polite">
-<h3>Semak Maklumat Rekod</h3><p>Pastikan semua maklumat betul sebelum simpan.</p>
+<h3>Semak Butiran</h3><p>Pastikan semua maklumat betul sebelum simpan.</p>
 <div id="wizard-review-content"></div>
 </div>
 <div class="record-actions wizard-actions">
@@ -187,8 +202,16 @@ document.addEventListener('DOMContentLoaded', function(){
  const review=document.getElementById('wizard-review'), reviewContent=document.getElementById('wizard-review-content');
  const back=document.getElementById('wizard-back'), next=document.getElementById('wizard-next'), submit=document.getElementById('wizard-submit'), counter=document.getElementById('step-counter');
  let current=0, highest=0, reviewing=false;
+ const costInput=document.getElementById('estimated_cost');
+ if(costInput){
+  // Kos bermula kosong supaya boleh terus menaip; jika dibiarkan kosong, RM0.00 digunakan.
+  costInput.addEventListener('blur',()=>{if(costInput.value.trim()==='')costInput.value='0.00';});
+  costInput.addEventListener('focus',()=>{if(costInput.value==='0.00')costInput.select();});
+ }
+
  function visibleFields(panel){return [...panel.querySelectorAll('input,select,textarea')].filter(el=>!el.disabled&&!el.closest('[hidden]')&&el.getClientRects().length>0);}
  function validation(step){
+  if(step===2 && costInput && costInput.value.trim()==='') costInput.value='0.00';
   const fields=visibleFields(panels[step]);
   for(const el of fields){
    if(!el.checkValidity()){el.reportValidity();el.focus();return false;}
@@ -210,35 +233,47 @@ document.addEventListener('DOMContentLoaded', function(){
    el.querySelector('.stepper-dot').textContent=summary||i<n?'✓':String(i+1);
   });
   document.querySelectorAll('.stepper-line').forEach((line,i)=>line.classList.toggle('is-done',summary||i<n));
-  counter.textContent=summary?'Semakan akhir':'Langkah '+(n+1)+' / 3';
+  counter.textContent=summary?'Semak Butiran':'Langkah '+(n+1)+' / 3';
   back.hidden=!summary&&n===0;next.hidden=summary;submit.hidden=!summary;
-  next.textContent=n===2?'Semak Rekod →':'Seterusnya →';
+  next.textContent=n===2?'Semak Butiran →':'Seterusnya →';
   document.querySelector('.stepper-card').scrollIntoView({block:'start',behavior:'smooth'});
  }
  function safeValue(field){
-  if(field.type==='checkbox')return field.checked?field.value:'';
+  if(field.type==='checkbox')return field.checked?(field.closest('label')?.textContent.trim()||field.parentElement?.textContent.trim()||field.value):'';
   if(field.tagName==='SELECT')return field.selectedOptions[0]?.textContent.trim()||'—';
   return field.value.trim()||'—';
  }
  function buildReview(){
   reviewContent.replaceChildren();
   const sections=['Maklumat Pemohon','Maklumat Peranti','Maklumat Perkhidmatan'];
+  const labelOverrides={device_ownership:'Pemilikan Peranti',device_type:'Jenis Peranti',device_type_other:'Jenis Peranti (Lain-lain)',device_brand:'Jenama',device_model:'Model',device_serial:'Serial Number',asset_number:'No. Aset USM',accessories:'Aksesori Diterima',accessory_other:'Aksesori Lain-lain',device_condition:'Keadaan Peranti',condition_notes:'Catatan Keadaan',service_type_ids:'Jenis Perkhidmatan',requester_name:'Nama Staf/Pelajar',department_id:'Jabatan/Pusat Pengajian',requester_phone:'No. Telefon',requester_email:'Emel',service_details:'Butiran Jenis Perkhidmatan',estimated_cost:'Kos (RM)',requested_at:'Tarikh/Masa Permintaan',handler_id:'Nama Pengendali Staf IT'};
   panels.forEach((panel,i)=>{
    const group=document.createElement('section');group.className='review-group';
    const h=document.createElement('h4');h.textContent=String(i+1).padStart(2,'0')+' — '+sections[i];group.append(h);
    const grid=document.createElement('div');grid.className='review-grid';
-   const fields=visibleFields(panel).filter(el=>el.name&&el.type!=='hidden'&&(!['checkbox','radio'].includes(el.type)||el.checked));
-   const names=new Set();
+   // Read all panels, including steps hidden by the wizard. Ignore conditional fields that are hidden within a step.
+   const fields=[...panel.querySelectorAll('input,select,textarea')].filter(el=>{
+    if(!el.name||el.type==='hidden'||el.disabled)return false;
+    if(el.closest('[data-other-device][hidden], [data-asset-field][hidden], [data-hardware-section][hidden]'))return false;
+    if(el.hasAttribute('hidden'))return false;
+    if(['checkbox','radio'].includes(el.type)&&!el.checked)return false;
+    return true;
+   });
+   const grouped=new Map();
    fields.forEach(field=>{
-    const name=field.name;
-    if(names.has(name))return;names.add(name);
-    const matched=fields.filter(x=>x.name===name);
-    const val=matched.map(safeValue).filter(x=>x&&x!=='—').join(', ')||'—';
-    let label=field.closest('div')?.querySelector('label')?.textContent.trim()||name.replaceAll('_',' ');
-    label=label.replace(/\s*\*.*$/,'').replace(/\s*\(Pilihan\)/,'').trim();
+    const name=field.name.replace(/\[\]$/,'');
+    if(!grouped.has(name))grouped.set(name,[]);
+    grouped.get(name).push(field);
+   });
+   grouped.forEach((items,name)=>{
+    const values=items.map(field=>{
+     if(field.type==='checkbox'||field.type==='radio')return field.dataset.label||field.closest('label')?.textContent.trim()||field.value;
+     if(field.tagName==='SELECT')return field.selectedOptions[0]?.textContent.trim()||'—';
+     return field.value.trim()||'—';
+    }).filter(v=>v&&v!=='—');
     const cell=document.createElement('div');cell.className='review-cell';
-    const small=document.createElement('span');small.textContent=label;
-    const strong=document.createElement('strong');strong.textContent=val;
+    const small=document.createElement('span');small.textContent=labelOverrides[name]||items[0].closest('div')?.querySelector('label')?.textContent.trim()||name.replaceAll('_',' ');
+    const strong=document.createElement('strong');strong.textContent=values.join(', ')||'—';
     cell.append(small,strong);grid.append(cell);
    });
    group.append(grid);reviewContent.append(group);
