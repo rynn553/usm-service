@@ -111,12 +111,12 @@ try {
   $page = min($page, $pages);
   $offset = ($page - 1) * 10;
   $sortSql = match ($sort) {
-    'status_first' => "CASE WHEN r.status='in_progress' THEN 0 ELSE 1 END,r.id DESC",
+    'status_first' => "CASE WHEN r.status='in_progress' THEN 0 ELSE 1 END,r.id ASC",
     'oldest' => 'r.requested_at ASC,r.id ASC',
     'ready_first' => "CASE WHEN r.status='ready' THEN 0 ELSE 1 END,r.requested_at DESC,r.id DESC",
     'uid_asc' => 'r.id ASC',
     'uid_desc' => 'r.id DESC',
-    default => "CASE WHEN r.status='in_progress' THEN 0 ELSE 1 END,r.id DESC",
+    default => "CASE WHEN r.status='in_progress' THEN 0 ELSE 1 END,r.id ASC",
   };
   $stmt = $pdo->prepare('SELECT r.*,d.name AS department_name,t.name AS service_type_name,h.name AS handler_name' . $from . ' WHERE ' . implode(' AND ', $conditions) . ' ORDER BY ' . $sortSql . ' LIMIT 10 OFFSET ' . $offset);
   $stmt->execute($params);
@@ -173,7 +173,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
           <div class="active-filter-options-row">
             <div class="active-filter-status"><label for="status">Status</label><select id="status" name="status"><option value="all">Semua Status</option><option value="in_progress" <?= $status === 'in_progress' ? 'selected' : '' ?>>In Progress</option><option value="ready" <?= $status === 'ready' ? 'selected' : '' ?>>Ready</option></select></div>
             <div class="active-filter-date"><label for="date">Tarikh</label><input type="date" id="date" name="date" value="<?= e($date) ?>"></div>
-            <div class="active-filter-sort"><label for="sort">Susun Ikut</label><select id="sort" name="sort"><option value="status_first" <?= $sort === 'status_first' ? 'selected' : '' ?>>In Progress → Ready → UID (Terbesar)</option><option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Terbaharu</option><option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Terlama</option><option value="ready_first" <?= $sort === 'ready_first' ? 'selected' : '' ?>>Ready Dahulu</option><option value="uid_asc" <?= $sort === 'uid_asc' ? 'selected' : '' ?>>UID Menaik</option><option value="uid_desc" <?= $sort === 'uid_desc' ? 'selected' : '' ?>>UID Menurun</option></select></div>
+            <div class="active-filter-sort"><label for="sort">Susun Ikut</label><select id="sort" name="sort"><option value="status_first" <?= $sort === 'status_first' ? 'selected' : '' ?>>In Progress → Ready (UID Menaik)</option><option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Terbaharu</option><option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Terlama</option><option value="ready_first" <?= $sort === 'ready_first' ? 'selected' : '' ?>>Ready Dahulu</option><option value="uid_asc" <?= $sort === 'uid_asc' ? 'selected' : '' ?>>UID Menaik</option><option value="uid_desc" <?= $sort === 'uid_desc' ? 'selected' : '' ?>>UID Menurun</option></select></div>
             <a class="active-clear" href="<?= APP_BASE ?>/services/index.php">Reset</a>
           </div>
         </form>
@@ -183,7 +183,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
             <td data-label="UID"><span class="active-uid">#<?= (int)$r['id'] ?></span></td>
             <td data-label="Nama Staf/Pelajar"><strong class="active-person"><?= e($r['requester_name']) ?></strong><small class="active-subtext"><?= e($r['department_name']) ?></small></td>
             <td data-label="Tarikh"><span class="active-nowrap"><?= e(display_date($r['requested_at'])) ?></span></td>
-            <td data-label="Status"><span class="active-badge <?= $r['status'] === 'ready' ? 'ready' : 'progress' ?>"><?= $r['status'] === 'ready' ? 'Sedia Diambil' : 'Dalam Proses' ?></span></td>
+            <td data-label="Status"><span class="active-badge <?= $r['status'] === 'ready' ? 'ready' : 'progress' ?>"><?= $r['status'] === 'ready' ? 'Ready' : 'In Progress' ?></span></td>
             <td data-label="Kos"><span class="active-nowrap">RM <?= number_format((float)$r['estimated_cost'], 2) ?></span></td>
             <td data-label="Pengendali"><?= e($r['handler_name']) ?></td>
             <td data-label="Tindakan" class="active-action-cell"><details class="active-action-menu"><summary aria-label="Tindakan untuk UID <?= (int)$r['id'] ?>">Tindakan <span aria-hidden="true">⌄</span></summary><div class="active-action-popover"><button type="button" class="details-trigger" data-id="<?= (int)$r['id'] ?>">Lihat Butiran</button><button type="button" class="edit-trigger" data-id="<?= (int)$r['id'] ?>">Edit Rekod</button><?php if ($r['status'] === 'in_progress'): ?><button type="button" class="ready-trigger" data-id="<?= (int)$r['id'] ?>" data-uid="UID #<?= (int)$r['id'] ?>">Tandakan Sedia Diambil</button><?php else: ?><a href="<?= APP_BASE ?>/payments/index.php?uid=<?= urlencode((string)$r['uid']) ?>">Complete ↗</a><?php endif; ?></div></details></td>
