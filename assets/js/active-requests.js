@@ -62,3 +62,14 @@
  document.querySelectorAll('.ready-trigger').forEach(b=>b.addEventListener('click',()=>{document.getElementById('ready-id').value=b.dataset.id;document.getElementById('ready-uid').textContent=b.dataset.uid;ready.showModal();}));
  [detail,edit,ready].forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close();}));
 })();
+
+// Close action menus on outside click, Escape or after choosing an action.
+(() => {
+  const menus = [...document.querySelectorAll('.active-action-menu')];
+  menus.forEach(menu => {
+    menu.addEventListener('toggle', () => { if (menu.open) menus.forEach(other => { if (other !== menu) other.open = false; }); });
+    menu.querySelectorAll('button,a').forEach(control => control.addEventListener('click', () => { menu.open = false; }));
+  });
+  document.addEventListener('click', event => { if (!event.target.closest('.active-action-menu')) menus.forEach(menu => { menu.open = false; }); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') menus.forEach(menu => { menu.open = false; }); });
+})();

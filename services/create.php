@@ -123,14 +123,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 @keyframes wizardIn{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:640px){.stepper-intro{align-items:flex-start;flex-direction:column}.service-stepper{padding:15px 9px;gap:3px}.stepper-item{flex-direction:column;gap:7px;font-size:10px;flex:0 1 100px;white-space:normal;text-align:center}.stepper-dot{width:32px;height:32px}.stepper-line{min-width:5px}.review-grid{grid-template-columns:1fr}.wizard-actions{flex-wrap:wrap}.wizard-actions .wizard-cancel{width:100%;text-align:center;order:3;margin-top:8px}}
 @media(prefers-reduced-motion:reduce){.wizard-panel{animation:none}}
+.stepper-intro-compact{justify-content:flex-end;margin-bottom:14px}
+.record-main{padding-top:24px}
 </style></head>
 <body class="workspace record-page">
 <?php $activePage='create'; require __DIR__.'/../includes/sidebar.php'; ?>
 <div class="record-area"><header class="record-header"><div><p class="eyebrow">REKOD &amp; JEJAK PERKHIDMATAN</p><h1>Rekod Perkhidmatan</h1></div><form action="<?= APP_BASE ?>/logout.php" method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><button class="record-logout" type="submit">Log Keluar ↗</button></form></header>
-<main class="record-main" id="main-content" tabindex="-1"><p class="record-hint">Masukkan butiran perkhidmatan di bawah. Medan bertanda * diperlukan.</p>
+<main class="record-main" id="main-content" tabindex="-1">
 <?php if ($errors): ?><div class="record-errors" role="alert"><strong>Sila semak borang:</strong><ul><?php foreach($errors as $error): ?><li><?= e($error) ?></li><?php endforeach; ?></ul></div><?php endif; ?>
 <section class="record-card stepper-card">
-<div class="stepper-intro"><div><p class="stepper-kicker">e-Servis IT@AMDI</p><h2>Rekod Perkhidmatan Baharu</h2><p>Lengkapkan tiga langkah di bawah untuk merekod permintaan.</p></div><span class="stepper-counter" id="step-counter">Langkah 1 / 3</span></div>
+
 <nav class="service-stepper" aria-label="Langkah rekod perkhidmatan">
 <button type="button" class="stepper-item is-active" data-step-target="0" aria-current="step"><span class="stepper-dot">1</span><span class="stepper-label">Pemohon</span></button>
 <span class="stepper-line" aria-hidden="true"></span>
@@ -233,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function(){
    el.querySelector('.stepper-dot').textContent=summary||i<n?'✓':String(i+1);
   });
   document.querySelectorAll('.stepper-line').forEach((line,i)=>line.classList.toggle('is-done',summary||i<n));
-  counter.textContent=summary?'Semak Butiran':'Langkah '+(n+1)+' / 3';
+  if(counter) counter.textContent=summary?'Semak Butiran':'Langkah '+(n+1)+' / 3';
   back.hidden=!summary&&n===0;next.hidden=summary;submit.hidden=!summary;
   next.textContent=n===2?'Semak Butiran →':'Seterusnya →';
   document.querySelector('.stepper-card').scrollIntoView({block:'start',behavior:'smooth'});
