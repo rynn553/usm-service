@@ -1,8 +1,8 @@
 <?php
 $navigation = [
 'home'=>['Papan pemuka','/home.php','▦'],
-'create'=>['Rekod perkhidmatan','/services/create.php','✎'],
-'active'=>['Permintaan aktif','/services/index.php','☷'],
+'create'=>['Rekod perkhidmatan','/rekod.php','✎'],
+'active'=>['Permintaan aktif','/aktif.php','☷'],
 'payment'=>['Penyelesaian & Bayaran','/payments/index.php','◇'],
 'history'=>['Sejarah perkhidmatan','/history.php','◷'],
 'reports'=>['Laporan','/reports.php','▤'],

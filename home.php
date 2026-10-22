@@ -40,7 +40,7 @@ $labels = ['in_progress' => 'In Progress', 'ready' => 'Ready', 'completed' => 'C
                 <div>
                     <h2>Ringkasan perkhidmatan</h2>
                     <p>Ringkasan terkini permintaan perkhidmatan yang direkodkan.</p>
-                </div><a class="dashboard-primary" href="<?= APP_BASE ?>/services/create.php">+ Rekod perkhidmatan</a>
+                </div><a class="dashboard-primary" href="<?= APP_BASE ?>/rekod.php">+ Rekod perkhidmatan</a>
             </div>
             <section class="stats-grid" aria-label="Statistik perkhidmatan">
                 <div class="stat-card"><span>Jumlah Bayaran Diterima</span><strong>RM <?= number_format((float)$summary['total_cost'], 2) ?></strong><small>Bagi perkhidmatan yang selesai dan dibayar</small></div>
@@ -50,7 +50,7 @@ $labels = ['in_progress' => 'In Progress', 'ready' => 'Ready', 'completed' => 'C
             </section>
             <section class="recent-panel">
                 <div class="recent-heading">
-                    <h2>Permintaan terkini</h2><a href="<?= APP_BASE ?>/services/index.php">Lihat semua permintaan</a>
+                    <h2>Permintaan terkini</h2><a href="<?= APP_BASE ?>/aktif.php">Lihat semua permintaan</a>
                 </div>
                 <div class="table-scroll">
                     <table>

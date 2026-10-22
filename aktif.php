@@ -1,15 +1,15 @@
 <?php
 
 declare(strict_types=1);
-require __DIR__ . '/../includes/auth.php';
+require __DIR__ . '/includes/auth.php';
 require_login();
-require __DIR__ . '/../config/database.php';
+require __DIR__ . '/config/database.php';
 require __DIR__ . '/service_multi.php';
 
 date_default_timezone_set('Asia/Kuala_Lumpur');
 function go_back(string $query = ''): never
 {
-  header('Location: ' . APP_BASE . '/services/index.php' . ($query ? '?' . $query : ''), true, 303);
+  header('Location: ' . APP_BASE . '/aktif.php' . ($query ? '?' . $query : ''), true, 303);
   exit;
 }
 function display_date(?string $date, bool $time = false): string
@@ -134,7 +134,7 @@ $created = $_SESSION['service_created_uid'] ?? null;
 unset($_SESSION['service_created_uid']);
 function page_url(int $page, string $q, string $status, string $date, string $sort): string
 {
-  return APP_BASE . '/services/index.php?' . http_build_query(['q' => $q, 'status' => $status, 'date' => $date, 'sort' => $sort, 'page' => $page]);
+  return APP_BASE . '/aktif.php?' . http_build_query(['q' => $q, 'status' => $status, 'date' => $date, 'sort' => $sort, 'page' => $page]);
 }
 ?>
 <!doctype html>
@@ -152,7 +152,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
 </head>
 
 <body class="workspace active-page"><?php $activePage = 'active';
-                                    require __DIR__ . '/../includes/sidebar.php'; ?>
+                                    require __DIR__ . '/includes/sidebar.php'; ?>
   <div class="active-area">
     <header class="active-header">
       <div>
@@ -165,7 +165,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
       <?php if ($flash): ?><div class="active-alert <?= $flash[0] === 'success' ? 'success' : 'error' ?>" role="status"><?= e($flash[1]) ?></div><?php endif; ?>
       <?php if ($created): ?><div class="active-alert success" role="status">Rekod baharu berjaya disimpan. Rujukan: <strong><?= e((string)$created) ?></strong></div><?php endif; ?>
       <section class="active-list-card" aria-label="Senarai permintaan aktif">
-        <form method="get" class="active-filter active-filter-two" action="<?= APP_BASE ?>/services/index.php">
+        <form method="get" class="active-filter active-filter-two" action="<?= APP_BASE ?>/aktif.php">
           <div class="active-filter-search-row">
             <div class="active-search"><label for="q">Cari Permintaan</label><div class="active-search-field"><span aria-hidden="true">⌕</span><input id="q" type="search" name="q" value="<?= e($search) ?>" placeholder="Cari UID, nama staf/pelajar atau pengendali"></div></div>
             <button class="active-search-btn" type="submit">Cari</button>
@@ -173,8 +173,8 @@ function page_url(int $page, string $q, string $status, string $date, string $so
           <div class="active-filter-options-row">
             <div class="active-filter-status"><label for="status">Status</label><select id="status" name="status"><option value="all">Semua Status</option><option value="in_progress" <?= $status === 'in_progress' ? 'selected' : '' ?>>In Progress</option><option value="ready" <?= $status === 'ready' ? 'selected' : '' ?>>Ready</option></select></div>
             <div class="active-filter-date"><label for="date">Tarikh</label><input type="date" id="date" name="date" value="<?= e($date) ?>"></div>
-            <div class="active-filter-sort"><label for="sort">Susun Ikut</label><select id="sort" name="sort"><option value="status_first" <?= $sort === 'status_first' ? 'selected' : '' ?>>In Progress → Ready (UID Menaik)</option><option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Terbaharu</option><option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Terlama</option><option value="ready_first" <?= $sort === 'ready_first' ? 'selected' : '' ?>>Ready Dahulu</option><option value="uid_asc" <?= $sort === 'uid_asc' ? 'selected' : '' ?>>UID Menaik</option><option value="uid_desc" <?= $sort === 'uid_desc' ? 'selected' : '' ?>>UID Menurun</option></select></div>
-            <a class="active-clear" href="<?= APP_BASE ?>/services/index.php">Reset</a>
+            <div class="active-filter-sort"><label for="sort">Susun Ikut</label><select id="sort" name="sort"><option value="status_first" <?= $sort === 'status_first' ? 'selected' : '' ?>>Pilih</option><option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Terbaharu</option><option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Terlama</option><option value="ready_first" <?= $sort === 'ready_first' ? 'selected' : '' ?>>Ready Dahulu</option><option value="uid_asc" <?= $sort === 'uid_asc' ? 'selected' : '' ?>>UID Menaik</option><option value="uid_desc" <?= $sort === 'uid_desc' ? 'selected' : '' ?>>UID Menurun</option></select></div>
+            <a class="active-clear" href="<?= APP_BASE ?>/aktif.php">Reset</a>
           </div>
         </form>
         <div class="active-table-wrap">
@@ -183,7 +183,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
             <td data-label="UID"><span class="active-uid">#<?= (int)$r['id'] ?></span></td>
             <td data-label="Nama Staf/Pelajar"><strong class="active-person"><?= e($r['requester_name']) ?></strong><small class="active-subtext"><?= e($r['department_name']) ?></small></td>
             <td data-label="Tarikh"><span class="active-nowrap"><?= e(display_date($r['requested_at'])) ?></span></td>
-            <td data-label="Status"><span class="active-badge <?= $r['status'] === 'ready' ? 'ready' : 'progress' ?>"><?= $r['status'] === 'ready' ? 'Ready' : 'In Progress' ?></span></td>
+            <td data-label="Status"><span class="active-badge <?= $r['status'] === 'ready' ? 'ready' : 'progress' ?>"><?= $r['status'] === 'ready' ? 'Sedia Diambil' : 'Dalam Proses' ?></span></td>
             <td data-label="Kos"><span class="active-nowrap">RM <?= number_format((float)$r['estimated_cost'], 2) ?></span></td>
             <td data-label="Pengendali"><?= e($r['handler_name']) ?></td>
             <td data-label="Tindakan" class="active-action-cell"><details class="active-action-menu"><summary aria-label="Tindakan untuk UID <?= (int)$r['id'] ?>">Tindakan <span aria-hidden="true">⌄</span></summary><div class="active-action-popover"><button type="button" class="details-trigger" data-id="<?= (int)$r['id'] ?>">Lihat Butiran</button><button type="button" class="edit-trigger" data-id="<?= (int)$r['id'] ?>">Edit Rekod</button><?php if ($r['status'] === 'in_progress'): ?><button type="button" class="ready-trigger" data-id="<?= (int)$r['id'] ?>" data-uid="UID #<?= (int)$r['id'] ?>">Tandakan Sedia Diambil</button><?php else: ?><a href="<?= APP_BASE ?>/payments/index.php?uid=<?= urlencode((string)$r['uid']) ?>">Complete ↗</a><?php endif; ?></div></details></td>
@@ -239,7 +239,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
     <div class="active-dialog-head">
       <div><span class="active-dialog-kicker">KEMAS KINI MAKLUMAT</span><h2>Edit Rekod Perkhidmatan</h2></div><button type="button" class="dialog-close" aria-label="Tutup">×</button>
     </div>
-    <form id="edit-form" method="post" action="<?= APP_BASE ?>/services/index.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="edit"><input type="hidden" name="id" id="edit-id"><input type="hidden" name="return" value="<?= e($back) ?>">
+    <form id="edit-form" method="post" action="<?= APP_BASE ?>/aktif.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="edit"><input type="hidden" name="id" id="edit-id"><input type="hidden" name="return" value="<?= e($back) ?>">
       <div class="record-section-heading"><span>01</span><h3>Maklumat Pemohon</h3></div>
       <div class="active-edit-grid">
         <div><label for="edit-name">Nama Staf/Pelajar *</label><input id="edit-name" name="requester_name" maxlength="150" required></div>
@@ -310,7 +310,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
       <h2>Sahkan Status Ready</h2><button type="button" class="dialog-close" aria-label="Tutup">×</button>
     </div>
     <p>Adakah anda pasti perkhidmatan <strong id="ready-uid"></strong> telah siap dan sedia untuk diambil?</p>
-    <form method="post" action="<?= APP_BASE ?>/services/index.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="ready"><input type="hidden" name="id" id="ready-id"><input type="hidden" name="return" value="<?= e($back) ?>">
+    <form method="post" action="<?= APP_BASE ?>/aktif.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="ready"><input type="hidden" name="id" id="ready-id"><input type="hidden" name="return" value="<?= e($back) ?>">
       <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Batal</button><button type="submit" class="active-primary">Ya, Tandakan Ready</button></div>
     </form>
   </dialog>
