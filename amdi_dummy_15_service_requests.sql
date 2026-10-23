@@ -1,0 +1,28 @@
+-- 15 DATA DUMMY e-Servis IT@AMDI
+-- Import di phpMyAdmin > database usm-service > SQL / Import.
+-- Tidak memadam data sedia ada dan tidak mengubah struktur database.
+-- UID paparan = service_requests.id (AUTO_INCREMENT), jadi nombor UID sebenar
+-- bergantung pada rekod yang sudah ada.
+-- Memerlukan sekurang-kurangnya satu users dan nama handlers seperti dalam data asal.
+-- Jalankan SEKALI sahaja. UID dalaman AMDI-DEMO-2026-xxx mengelakkan konflik dengan UID asal.
+
+START TRANSACTION;
+INSERT INTO service_requests
+(uid, requester_name, department_id, service_type_id, service_details, estimated_cost, requested_at, handler_id, status, ready_at, created_by, requester_email, device_ownership, device_type, device_serial, asset_number, device_condition)
+VALUES
+('AMDI-DEMO-2026-001', 'Ahmad Hakimi', 1, 1, '[DATA DUMMY] Pemasangan Windows pada komputer pejabat', 0.00, '2026-10-08 10:30:00', (SELECT id FROM handlers WHERE name='Zairil' LIMIT 1), 'in_progress', NULL, (SELECT id FROM users ORDER BY id LIMIT 1), 'demo1@example.com', 'usm', 'Laptop', 'DEMO-SN-001', 'DEMO-ASSET-001', 'unchecked'),
+('AMDI-DEMO-2026-002', 'Nur Aisyah', 2, 2, '[DATA DUMMY] Pemasangan Microsoft Office', 15.00, '2026-10-09 11:30:00', (SELECT id FROM handlers WHERE name='Salleh' LIMIT 1), 'in_progress', NULL, (SELECT id FROM users ORDER BY id LIMIT 1), 'demo2@example.com', 'usm', 'Laptop', 'DEMO-SN-002', 'DEMO-ASSET-002', 'unchecked'),
+('AMDI-DEMO-2026-003', 'Muhammad Danish', 1, 3, '[DATA DUMMY] Pemasangan dan konfigurasi SPSS', 20.00, '2026-10-10 12:30:00', (SELECT id FROM handlers WHERE name='Shafiza' LIMIT 1), 'in_progress', NULL, (SELECT id FROM users ORDER BY id LIMIT 1), 'demo3@example.com', 'usm', 'Laptop', 'DEMO-SN-003', 'DEMO-ASSET-003', 'unchecked'),
+('AMDI-DEMO-2026-004', 'Siti Hajar', 2, 4, '[DATA DUMMY] Komputer tidak dapat dihidupkan', 0.00, '2026-10-11 13:30:00', (SELECT id FROM handlers WHERE name='Abdillah' LIMIT 1), 'in_progress', NULL, (SELECT id FROM users ORDER BY id LIMIT 1), 'demo4@example.com', 'usm', 'Laptop', 'DEMO-SN-004', 'DEMO-ASSET-004', 'unchecked'),
+('AMDI-DEMO-2026-005', 'Farhan Azmi', 1, 5, '[DATA DUMMY] Imbasan dan pembersihan virus', 0.00, '2026-10-12 14:30:00', (SELECT id FROM handlers WHERE name='Fauzi' LIMIT 1), 'in_progress', NULL, (SELECT id FROM users ORDER BY id LIMIT 1), 'demo5@example.com', 'usm', 'Laptop', 'DEMO-SN-005', 'DEMO-ASSET-005', 'unchecked'),
+('AMDI-DEMO-2026-006', 'Nur Izzati', 2, 6, '[DATA DUMMY] Masalah sambungan Wi-Fi', 0.00, '2026-10-13 15:30:00', (SELECT id FROM handlers WHERE name='Hisham' LIMIT 1), 'in_progress', NULL, (SELECT id FROM users ORDER BY id LIMIT 1), 'demo6@example.com', 'usm', 'Laptop', 'DEMO-SN-006', 'DEMO-ASSET-006', 'unchecked'),
+('AMDI-DEMO-2026-007', 'Amirul Hakim', 1, 7, '[DATA DUMMY] Pemasangan SSD baharu', 180.00, '2026-10-14 09:30:00', (SELECT id FROM handlers WHERE name='Amin' LIMIT 1), 'in_progress', NULL, (SELECT id FROM users ORDER BY id LIMIT 1), 'demo7@example.com', 'usm', 'Laptop', 'DEMO-SN-007', 'DEMO-ASSET-007', 'unchecked'),
+('AMDI-DEMO-2026-008', 'Nadia Sofea', 2, 6, '[DATA DUMMY] Konfigurasi Wi-Fi komputer riba', 0.00, '2026-10-15 10:30:00', (SELECT id FROM handlers WHERE name='Zairil' LIMIT 1), 'in_progress', NULL, (SELECT id FROM users ORDER BY id LIMIT 1), 'demo8@example.com', 'usm', 'Laptop', 'DEMO-SN-008', 'DEMO-ASSET-008', 'unchecked'),
+('AMDI-DEMO-2026-009', 'Syafiq Rahman', 1, 4, '[DATA DUMMY] Pemeriksaan komputer perlahan', 0.00, '2026-10-16 11:30:00', (SELECT id FROM handlers WHERE name='Salleh' LIMIT 1), 'in_progress', NULL, (SELECT id FROM users ORDER BY id LIMIT 1), 'demo9@example.com', 'usm', 'Laptop', 'DEMO-SN-009', 'DEMO-ASSET-009', 'unchecked'),
+('AMDI-DEMO-2026-010', 'Aina Balqis', 2, 2, '[DATA DUMMY] Pemasangan Microsoft Office', 15.00, '2026-10-17 12:30:00', (SELECT id FROM handlers WHERE name='Shafiza' LIMIT 1), 'ready', '2026-10-18 15:00:00', (SELECT id FROM users ORDER BY id LIMIT 1), 'demo10@example.com', 'usm', 'Laptop', 'DEMO-SN-010', 'DEMO-ASSET-010', 'unchecked'),
+('AMDI-DEMO-2026-011', 'Haziq Firdaus', 1, 4, '[DATA DUMMY] Pemeriksaan masalah paparan monitor', 0.00, '2026-10-18 13:30:00', (SELECT id FROM handlers WHERE name='Abdillah' LIMIT 1), 'ready', '2026-10-19 15:00:00', (SELECT id FROM users ORDER BY id LIMIT 1), 'demo11@example.com', 'usm', 'Laptop', 'DEMO-SN-011', 'DEMO-ASSET-011', 'unchecked'),
+('AMDI-DEMO-2026-012', 'Nurul Syuhada', 2, 3, '[DATA DUMMY] Pemasangan antivirus', 25.00, '2026-10-19 14:30:00', (SELECT id FROM handlers WHERE name='Fauzi' LIMIT 1), 'ready', '2026-10-20 15:00:00', (SELECT id FROM users ORDER BY id LIMIT 1), 'demo12@example.com', 'usm', 'Laptop', 'DEMO-SN-012', 'DEMO-ASSET-012', 'unchecked'),
+('AMDI-DEMO-2026-013', 'Irfan Zikri', 1, 7, '[DATA DUMMY] Penukaran RAM komputer', 95.00, '2026-10-20 15:30:00', (SELECT id FROM handlers WHERE name='Hisham' LIMIT 1), 'ready', '2026-10-21 15:00:00', (SELECT id FROM users ORDER BY id LIMIT 1), 'demo13@example.com', 'usm', 'Laptop', 'DEMO-SN-013', 'DEMO-ASSET-013', 'unchecked'),
+('AMDI-DEMO-2026-014', 'Maisarah Ali', 2, 6, '[DATA DUMMY] Konfigurasi rangkaian Wi-Fi', 0.00, '2026-10-21 09:30:00', (SELECT id FROM handlers WHERE name='Amin' LIMIT 1), 'ready', '2026-10-22 15:00:00', (SELECT id FROM users ORDER BY id LIMIT 1), 'demo14@example.com', 'usm', 'Laptop', 'DEMO-SN-014', 'DEMO-ASSET-014', 'unchecked'),
+('AMDI-DEMO-2026-015', 'Adam Harith', 1, 1, '[DATA DUMMY] Pemasangan sistem pengoperasian', 30.00, '2026-10-22 10:30:00', (SELECT id FROM handlers WHERE name='Zairil' LIMIT 1), 'ready', '2026-10-23 15:00:00', (SELECT id FROM users ORDER BY id LIMIT 1), 'demo15@example.com', 'usm', 'Laptop', 'DEMO-SN-015', 'DEMO-ASSET-015', 'unchecked');
+COMMIT;
