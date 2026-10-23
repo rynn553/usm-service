@@ -127,10 +127,10 @@ if ($exportRequested && $error === '') {
     $sheet->setTitle('Laporan Perkhidmatan');
 
     // Tajuk laporan
-    $sheet->mergeCells('A1:H1');
+    $sheet->mergeCells('A1:E1');
     $sheet->setCellValue('A1', 'Laporan Perkhidmatan USM');
 
-    $sheet->mergeCells('A2:H2');
+    $sheet->mergeCells('A2:E2');
     $sheet->setCellValue('A2', $periodLabel);
 
     $sheet->setCellValue('A3', 'Bilangan servis selesai');
@@ -143,29 +143,23 @@ if ($exportRequested && $error === '') {
         ->setFormatCode('#,##0.00');
 
     // Tajuk lajur
-$sheet->fromArray([
-    'UID',
-    'Nama staf/pelajar',
-    'Jabatan',
-    'Jenis servis',
-    'Tarikh bayaran',
-    'No. Rujukan',
-    'Pengendali',
-    'Kos (RM)',
-], null, 'A5');
+    $sheet->fromArray([
+        'Tarikh',
+        'Nama',
+        'Jenis Perkhidmatan',
+        'No. Rujukan',
+        'Jumlah (RM)',
+    ], null, 'A5');
 
     $row = 6;
 
     foreach ($records as $record) {
         // Simpan teks sebagai teks, termasuk No. Rujukan.
-$textCells = [
-    'A' => (string) $record['id'],
-    'B' => $record['requester_name'],
-    'C' => $record['department_name'],
-    'D' => $record['service_type_name'],
-    'F' => $record['reference_no'] ?? '',
-    'G' => $record['handler_name'],
-];
+        $textCells = [
+            'B' => $record['requester_name'],
+            'C' => $record['service_type_name'],
+            'D' => $record['reference_no'] ?? '',
+        ];
 
         foreach ($textCells as $column => $value) {
             $sheet->setCellValueExplicit(
@@ -176,12 +170,12 @@ $textCells = [
         }
 
         $sheet->setCellValue(
-            'H' . $row,
+            'E' . $row,
             (float) $record['estimated_cost']
         );
 
         $sheet->setCellValue(
-            'E' . $row,
+            'A' . $row,
             \PhpOffice\PhpSpreadsheet\Shared\Date::PHPToExcel(
                 new DateTimeImmutable($record['payment_date'])
             )
@@ -193,17 +187,17 @@ $textCells = [
     $lastDataRow = $row - 1;
 
     if ($records) {
-        $sheet->getStyle('H6:H' . $lastDataRow)
+        $sheet->getStyle('E6:E' . $lastDataRow)
             ->getNumberFormat()
             ->setFormatCode('#,##0.00');
 
-        $sheet->getStyle('E6:E' . $lastDataRow)
+        $sheet->getStyle('A6:A' . $lastDataRow)
             ->getNumberFormat()
             ->setFormatCode('dd/mm/yyyy');
 
-        $sheet->setAutoFilter('A5:H' . $lastDataRow);
+        $sheet->setAutoFilter('A5:E' . $lastDataRow);
 
-        $sheet->getStyle('A6:H' . $lastDataRow)
+        $sheet->getStyle('A6:E' . $lastDataRow)
             ->getAlignment()
             ->setVertical(
                 \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP
@@ -211,27 +205,27 @@ $textCells = [
     }
 
     // Jumlah di bawah jadual
-    $sheet->mergeCells('A' . $row . ':G' . $row);
-    $sheet->setCellValue('A' . $row, 'JUMLAH KOS · ' . $totalServices . ' rekod');
-    $sheet->setCellValue('H' . $row, (float) $totalPayment);
+    $sheet->mergeCells('A' . $row . ':D' . $row);
+    $sheet->setCellValue('A' . $row, 'JUMLAH · ' . $totalServices . ' rekod');
+    $sheet->setCellValue('E' . $row, (float) $totalPayment);
 
-    $sheet->getStyle('A' . $row . ':H' . $row)
+    $sheet->getStyle('A' . $row . ':E' . $row)
         ->getFont()
         ->setBold(true);
 
-    $sheet->getStyle('H' . $row)
+    $sheet->getStyle('E' . $row)
         ->getNumberFormat()
         ->setFormatCode('#,##0.00');
 
     // Kemasan
     $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(18);
 
-    $sheet->getStyle('A5:H5')->getFont()
+    $sheet->getStyle('A5:E5')->getFont()
         ->setBold(true)
         ->getColor()
         ->setARGB('FFFFFFFF');
 
-    $sheet->getStyle('A5:H5')->getFill()
+    $sheet->getStyle('A5:E5')->getFill()
         ->setFillType(
             \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID
         )
@@ -242,21 +236,18 @@ $textCells = [
     $sheet->freezePane('A6');
 
     $widths = [
-        'A' => 28,
-        'B' => 26,
-        'C' => 32,
-        'D' => 36,
+        'A' => 18,
+        'B' => 28,
+        'C' => 42,
+        'D' => 28,
         'E' => 20,
-        'F' => 26,
-        'G' => 22,
-        'H' => 18,
     ];
 
     foreach ($widths as $column => $width) {
         $sheet->getColumnDimension($column)->setWidth($width);
     }
 
-    $sheet->getStyle('A5:H' . $row)
+    $sheet->getStyle('A5:E' . $row)
         ->getAlignment()
         ->setWrapText(true);
 
