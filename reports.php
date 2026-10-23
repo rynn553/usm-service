@@ -127,10 +127,10 @@ if ($exportRequested && $error === '') {
     $sheet->setTitle('Laporan Perkhidmatan');
 
     // Tajuk laporan
-    $sheet->mergeCells('A1:E1');
+    $sheet->mergeCells('A1:F1');
     $sheet->setCellValue('A1', 'Laporan Perkhidmatan USM');
 
-    $sheet->mergeCells('A2:E2');
+    $sheet->mergeCells('A2:F2');
     $sheet->setCellValue('A2', $periodLabel);
 
     $sheet->setCellValue('A3', 'Bilangan servis selesai');
@@ -146,6 +146,7 @@ if ($exportRequested && $error === '') {
     $sheet->fromArray([
         'Tarikh',
         'Nama',
+        'Jabatan',
         'Jenis Perkhidmatan',
         'No. Rujukan',
         'Jumlah (RM)',
@@ -157,8 +158,9 @@ if ($exportRequested && $error === '') {
         // Simpan teks sebagai teks, termasuk No. Rujukan.
         $textCells = [
             'B' => $record['requester_name'],
-            'C' => $record['service_type_name'],
-            'D' => $record['reference_no'] ?? '',
+            'C' => $record['department_name'],
+            'D' => $record['service_type_name'],
+            'E' => $record['reference_no'] ?? '',
         ];
 
         foreach ($textCells as $column => $value) {
@@ -170,7 +172,7 @@ if ($exportRequested && $error === '') {
         }
 
         $sheet->setCellValue(
-            'E' . $row,
+            'F' . $row,
             (float) $record['estimated_cost']
         );
 
@@ -187,7 +189,7 @@ if ($exportRequested && $error === '') {
     $lastDataRow = $row - 1;
 
     if ($records) {
-        $sheet->getStyle('E6:E' . $lastDataRow)
+        $sheet->getStyle('F6:F' . $lastDataRow)
             ->getNumberFormat()
             ->setFormatCode('#,##0.00');
 
@@ -195,9 +197,9 @@ if ($exportRequested && $error === '') {
             ->getNumberFormat()
             ->setFormatCode('dd/mm/yyyy');
 
-        $sheet->setAutoFilter('A5:E' . $lastDataRow);
+        $sheet->setAutoFilter('A5:F' . $lastDataRow);
 
-        $sheet->getStyle('A6:E' . $lastDataRow)
+        $sheet->getStyle('A6:F' . $lastDataRow)
             ->getAlignment()
             ->setVertical(
                 \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP
@@ -205,27 +207,27 @@ if ($exportRequested && $error === '') {
     }
 
     // Jumlah di bawah jadual
-    $sheet->mergeCells('A' . $row . ':D' . $row);
+    $sheet->mergeCells('A' . $row . ':E' . $row);
     $sheet->setCellValue('A' . $row, 'JUMLAH · ' . $totalServices . ' rekod');
-    $sheet->setCellValue('E' . $row, (float) $totalPayment);
+    $sheet->setCellValue('F' . $row, (float) $totalPayment);
 
-    $sheet->getStyle('A' . $row . ':E' . $row)
+    $sheet->getStyle('A' . $row . ':F' . $row)
         ->getFont()
         ->setBold(true);
 
-    $sheet->getStyle('E' . $row)
+    $sheet->getStyle('F' . $row)
         ->getNumberFormat()
         ->setFormatCode('#,##0.00');
 
     // Kemasan
     $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(18);
 
-    $sheet->getStyle('A5:E5')->getFont()
+    $sheet->getStyle('A5:F5')->getFont()
         ->setBold(true)
         ->getColor()
         ->setARGB('FFFFFFFF');
 
-    $sheet->getStyle('A5:E5')->getFill()
+    $sheet->getStyle('A5:F5')->getFill()
         ->setFillType(
             \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID
         )
@@ -238,16 +240,17 @@ if ($exportRequested && $error === '') {
     $widths = [
         'A' => 18,
         'B' => 28,
-        'C' => 42,
-        'D' => 28,
-        'E' => 20,
+        'C' => 32,
+        'D' => 42,
+        'E' => 28,
+        'F' => 20,
     ];
 
     foreach ($widths as $column => $width) {
         $sheet->getColumnDimension($column)->setWidth($width);
     }
 
-    $sheet->getStyle('A5:E' . $row)
+    $sheet->getStyle('A5:F' . $row)
         ->getAlignment()
         ->setWrapText(true);
 
