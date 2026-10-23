@@ -205,7 +205,7 @@ if (isset($_GET['uid']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
                             type="text"
                             id="uid"
                             name="uid"
-                            placeholder="Contoh: USM-2026-DEMO002"
+                            
                             maxlength="40"
                             required
                         >
@@ -264,7 +264,7 @@ if (isset($_GET['uid']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div>
-            <dt>Anggaran kos</dt>
+            <dt>Kos</dt>
             <dd>
                 RM <?= number_format(
                     (float) $request['estimated_cost'],
