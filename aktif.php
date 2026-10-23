@@ -214,7 +214,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
                   <td data-label="Tindakan" class="active-action-cell">
                     <details class="active-action-menu">
                       <summary aria-label="Tindakan untuk UID <?= (int)$r['id'] ?>">Tindakan <span aria-hidden="true">⌄</span></summary>
-                      <div class="active-action-popover"><button type="button" class="details-trigger" data-id="<?= (int)$r['id'] ?>">Lihat Butiran</button><button type="button" class="edit-trigger" data-id="<?= (int)$r['id'] ?>">Edit Rekod</button><?php if ($r['status'] === 'in_progress'): ?><button type="button" class="ready-trigger" data-id="<?= (int)$r['id'] ?>" data-uid="UID #<?= (int)$r['id'] ?>">Tandakan Sedia Diambil</button><?php else: ?><a href="<?= APP_BASE ?>/payments/index.php?uid=<?= urlencode((string)$r['uid']) ?>">Complete ↗</a><?php endif; ?></div>
+                      <div class="active-action-popover"><button type="button" class="details-trigger" data-id="<?= (int)$r['id'] ?>">Butiran</button><button type="button" class="edit-trigger" data-id="<?= (int)$r['id'] ?>">Edit</button><?php if ($r['status'] === 'in_progress'): ?><button type="button" class="ready-trigger" data-id="<?= (int)$r['id'] ?>" data-uid="UID #<?= (int)$r['id'] ?>">Ready</button><?php else: ?><a href="<?= APP_BASE ?>/payments/index.php?uid=<?= urlencode((string)$r['uid']) ?>">Complete ↗</a><?php endif; ?></div>
                     </details>
                   </td>
                 </tr><?php endforeach; ?>
