@@ -63,13 +63,71 @@
  [detail,edit,ready].forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close();}));
 })();
 
-// Close action menus on outside click, Escape or after choosing an action.
+// Keep the action menu above the table's scrolling/overflow container.
+// The popup is temporarily moved to <body> while open, preserving its controls.
 (() => {
   const menus = [...document.querySelectorAll('.active-action-menu')];
+  let active = null;
+  const margin = 8;
+
+  function closeMenu(menu) {
+    if (!menu) return;
+    menu.open = false;
+    const popup = menu.querySelector('.active-action-popover');
+    if (popup && popup.parentElement !== menu) {
+      menu.appendChild(popup);
+      popup.classList.remove('active-action-floating');
+      popup.style.removeProperty('left');
+      popup.style.removeProperty('top');
+      popup.style.removeProperty('bottom');
+      popup.style.removeProperty('right');
+      popup.style.removeProperty('visibility');
+    }
+    if (active === menu) active = null;
+  }
+
+  function positionPopup() {
+    if (!active || !active.open) return;
+    const trigger = active.querySelector('summary');
+    const popup = active.querySelector('.active-action-popover');
+    if (!trigger || !popup) return;
+    const rect = trigger.getBoundingClientRect();
+    const width = popup.offsetWidth;
+    const height = popup.offsetHeight;
+    const roomBelow = window.innerHeight - rect.bottom;
+    const roomAbove = rect.top;
+    const above = roomBelow < height + margin && roomAbove > roomBelow;
+    const top = above ? Math.max(margin, rect.top - height - 6) : Math.min(window.innerHeight - height - margin, rect.bottom + 6);
+    const left = Math.max(margin, Math.min(rect.right - width, window.innerWidth - width - margin));
+    popup.style.left = `${left}px`;
+    popup.style.top = `${Math.max(margin, top)}px`;
+  }
+
   menus.forEach(menu => {
-    menu.addEventListener('toggle', () => { if (menu.open) menus.forEach(other => { if (other !== menu) other.open = false; }); });
-    menu.querySelectorAll('button,a').forEach(control => control.addEventListener('click', () => { menu.open = false; }));
+    menu.addEventListener('toggle', () => {
+      if (!menu.open) { closeMenu(menu); return; }
+      if (active && active !== menu) closeMenu(active);
+      active = menu;
+      const popup = menu.querySelector('.active-action-popover');
+      if (!popup) return;
+      popup.classList.add('active-action-floating');
+      popup.style.visibility = 'hidden';
+      document.body.appendChild(popup);
+      positionPopup();
+      popup.style.visibility = 'visible';
+    });
+    menu.querySelectorAll('button,a').forEach(control => {
+      control.addEventListener('click', () => closeMenu(menu));
+    });
   });
-  document.addEventListener('click', event => { if (!event.target.closest('.active-action-menu')) menus.forEach(menu => { menu.open = false; }); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') menus.forEach(menu => { menu.open = false; }); });
+  document.addEventListener('pointerdown', event => {
+    if (!active) return;
+    const popup = document.querySelector('body > .active-action-popover.active-action-floating');
+    if (!active.contains(event.target) && !(popup && popup.contains(event.target))) closeMenu(active);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && active) { closeMenu(active); }
+  });
+  window.addEventListener('resize', positionPopup);
+  window.addEventListener('scroll', positionPopup, true);
 })();
