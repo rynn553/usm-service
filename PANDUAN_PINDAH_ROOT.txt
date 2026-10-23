@@ -1,0 +1,17 @@
+KEMAS KINI e-Servis IT@AMDI — Pindah modul ke ROOT
+
+Struktur baharu:
+  /rekod.php
+  /aktif.php
+  /service_multi.php (helper diperlukan oleh dua halaman)
+
+Pemasangan:
+1. Backup folder project dan database terlebih dahulu.
+2. Extract kandungan usm-service/ ke C:\xampp\htdocs\usm-service\ (replace fail jika diminta).
+3. PADAM keseluruhan folder lama C:\xampp\htdocs\usm-service\services\ selepas mengesahkan fail baharu wujud.
+4. Akses http://localhost/usm-service/rekod.php dan http://localhost/usm-service/aktif.php.
+5. Uji simpan rekod, carian, edit, Ready, Complete -> Pembayaran.
+
+Fail diubah: rekod.php, aktif.php, service_multi.php (dipindah); includes/sidebar.php dan home.php (link sahaja).
+Tiada perubahan logik modul Izzah, payments, atau database.
+Nota: ZIP penuh ini tidak mengandungi folder .git untuk elak overwrite sejarah Git tempatan.

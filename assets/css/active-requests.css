@@ -599,3 +599,25 @@
 .active-filter-two input,.active-filter-two select{font-size:13px}
 @media(max-width:800px){.active-list-card>.active-filter.active-filter-two{padding:18px;gap:14px}.active-filter-two .active-filter-options-row{flex-wrap:wrap}.active-filter-two .active-filter-options-row .active-filter-status,.active-filter-two .active-filter-options-row .active-filter-date,.active-filter-two .active-filter-options-row .active-filter-sort{flex:1 1 calc(50% - 8px)}.active-filter-two .active-filter-options-row .active-clear{flex:1 1 calc(50% - 8px)}}
 @media(max-width:480px){.active-filter-two .active-filter-search-row{gap:8px}.active-filter-two .active-filter-search-row .active-search-btn{min-width:74px;padding:0 10px}.active-filter-two .active-filter-options-row .active-filter-status,.active-filter-two .active-filter-options-row .active-filter-date,.active-filter-two .active-filter-options-row .active-filter-sort{flex:1 1 100%}.active-filter-two .active-filter-options-row .active-clear{flex:1 1 100%}}
+
+/* Dropdown Tindakan: keep menu visible below its trigger. */
+.active-list-card,
+.active-table-wrap {
+  overflow: visible;
+}
+.active-action-cell:has(.active-action-menu[open]) {
+  z-index: 50;
+}
+.active-action-menu[open] {
+  z-index: 51;
+}
+.active-table tbody tr:nth-last-child(-n+2) .active-action-popover {
+  top: calc(100% + 5px);
+  bottom: auto;
+}
+@media (max-width: 700px) {
+  .active-action-popover {
+    top: calc(100% + 5px);
+    bottom: auto;
+  }
+}
