@@ -97,6 +97,7 @@ if ($error === '') {
 
         $statement = $pdo->prepare(
             "SELECT
+                r.id,
                 r.uid,
                 r.requester_name,
                 d.name AS department_name,
@@ -142,29 +143,29 @@ if ($exportRequested && $error === '') {
         ->setFormatCode('#,##0.00');
 
     // Tajuk lajur
-    $sheet->fromArray([
-        'UID',
-        'Nama staf/pelajar',
-        'Jabatan',
-        'Jenis servis',
-        'Kos (RM)',
-        'Tarikh bayaran',
-        'No. Rujukan',
-        'Pengendali',
-    ], null, 'A5');
+$sheet->fromArray([
+    'UID',
+    'Nama staf/pelajar',
+    'Jabatan',
+    'Jenis servis',
+    'Tarikh bayaran',
+    'No. Rujukan',
+    'Pengendali',
+    'Kos (RM)',
+], null, 'A5');
 
     $row = 6;
 
     foreach ($records as $record) {
         // Simpan teks sebagai teks, termasuk No. Rujukan.
-        $textCells = [
-            'A' => $record['uid'],
-            'B' => $record['requester_name'],
-            'C' => $record['department_name'],
-            'D' => $record['service_type_name'],
-            'G' => $record['reference_no'] ?? '',
-            'H' => $record['handler_name'],
-        ];
+$textCells = [
+    'A' => (string) $record['id'],
+    'B' => $record['requester_name'],
+    'C' => $record['department_name'],
+    'D' => $record['service_type_name'],
+    'F' => $record['reference_no'] ?? '',
+    'G' => $record['handler_name'],
+];
 
         foreach ($textCells as $column => $value) {
             $sheet->setCellValueExplicit(
@@ -175,12 +176,12 @@ if ($exportRequested && $error === '') {
         }
 
         $sheet->setCellValue(
-            'E' . $row,
+            'H' . $row,
             (float) $record['estimated_cost']
         );
 
         $sheet->setCellValue(
-            'F' . $row,
+            'E' . $row,
             \PhpOffice\PhpSpreadsheet\Shared\Date::PHPToExcel(
                 new DateTimeImmutable($record['payment_date'])
             )
@@ -192,11 +193,11 @@ if ($exportRequested && $error === '') {
     $lastDataRow = $row - 1;
 
     if ($records) {
-        $sheet->getStyle('E6:E' . $lastDataRow)
+        $sheet->getStyle('H6:H' . $lastDataRow)
             ->getNumberFormat()
             ->setFormatCode('#,##0.00');
 
-        $sheet->getStyle('F6:F' . $lastDataRow)
+        $sheet->getStyle('E6:E' . $lastDataRow)
             ->getNumberFormat()
             ->setFormatCode('dd/mm/yyyy');
 
@@ -210,14 +211,15 @@ if ($exportRequested && $error === '') {
     }
 
     // Jumlah di bawah jadual
-    $sheet->setCellValue('D' . $row, 'JUMLAH');
-    $sheet->setCellValue('E' . $row, (float) $totalPayment);
+    $sheet->mergeCells('A' . $row . ':G' . $row);
+    $sheet->setCellValue('A' . $row, 'JUMLAH KOS · ' . $totalServices . ' rekod');
+    $sheet->setCellValue('H' . $row, (float) $totalPayment);
 
-    $sheet->getStyle('D' . $row . ':H' . $row)
+    $sheet->getStyle('A' . $row . ':H' . $row)
         ->getFont()
         ->setBold(true);
 
-    $sheet->getStyle('E' . $row)
+    $sheet->getStyle('H' . $row)
         ->getNumberFormat()
         ->setFormatCode('#,##0.00');
 
@@ -244,10 +246,10 @@ if ($exportRequested && $error === '') {
         'B' => 26,
         'C' => 32,
         'D' => 36,
-        'E' => 16,
-        'F' => 20,
-        'G' => 26,
-        'H' => 22,
+        'E' => 20,
+        'F' => 26,
+        'G' => 22,
+        'H' => 18,
     ];
 
     foreach ($widths as $column => $width) {
@@ -416,7 +418,7 @@ if ($exportRequested && $error === '') {
                     <div class="report-stat">
                         <span>Bilangan servis selesai</span>
                         <strong><?= $totalServices ?></strong>
-                        <small>Dengan bayaran dalam tempoh dipilih</small>
+                        
                     </div>
 
                     <div class="report-stat">
@@ -424,7 +426,7 @@ if ($exportRequested && $error === '') {
                         <strong>
                             RM <?= number_format((float) $totalPayment, 2) ?>
                         </strong>
-                        <small>Bagi perkhidmatan selesai dan dibayar</small>
+                        
                     </div>
                 </section>
 
@@ -439,10 +441,10 @@ if ($exportRequested && $error === '') {
                                     <th>NAMA STAF/PELAJAR</th>
                                     <th>JABATAN</th>
                                     <th>JENIS SERVIS</th>
-                                    <th>KOS</th>
                                     <th>TARIKH BAYARAN</th>
                                     <th>NO. RUJUKAN</th>
                                     <th>PENGENDALI</th>
+                                    <th>KOS</th>
                                 </tr>
                             </thead>
 
@@ -450,8 +452,8 @@ if ($exportRequested && $error === '') {
                                 <?php foreach ($records as $record): ?>
                                     <tr>
                                         <td class="uid">
-                                            <?= e($record['uid']) ?>
-                                        </td>
+    <?= (int) $record['id'] ?>
+</td>
 
                                         <td>
                                             <?= e($record['requester_name']) ?>
@@ -463,13 +465,6 @@ if ($exportRequested && $error === '') {
 
                                         <td>
                                             <?= e($record['service_type_name']) ?>
-                                        </td>
-
-                                        <td class="report-nowrap">
-                                            RM <?= number_format(
-                                                (float) $record['estimated_cost'],
-                                                2
-                                            ) ?>
                                         </td>
 
                                         <td class="report-nowrap">
@@ -486,6 +481,12 @@ if ($exportRequested && $error === '') {
                                         <td>
                                             <?= e($record['handler_name']) ?>
                                         </td>
+                                        <td class="report-nowrap">
+                                            RM <?= number_format(
+                                                (float) $record['estimated_cost'],
+                                                2
+                                            ) ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
 
@@ -498,22 +499,19 @@ if ($exportRequested && $error === '') {
                                 <?php endif; ?>
                             </tbody>
 
-                            <tfoot>
-                                <tr>
-                                    <th colspan="4">JUMLAH</th>
-                                    <td class="report-nowrap">
-                                        <strong>
-                                            RM <?= number_format(
-                                                (float) $totalPayment,
-                                                2
-                                            ) ?>
-                                        </strong>
-                                    </td>
-                                    <td colspan="3">
-                                        <?= $totalServices ?> rekod
-                                    </td>
-                                </tr>
-                            </tfoot>
+<tfoot>
+    <tr>
+        <th colspan="7">
+            JUMLAH KOS · <?= $totalServices ?> rekod
+        </th>
+
+        <td class="report-nowrap">
+            <strong>
+                RM <?= number_format((float) $totalPayment, 2) ?>
+            </strong>
+        </td>
+    </tr>
+</tfoot>
                         </table>
                     </div>
                 </section>
