@@ -65,69 +65,49 @@
 
 // Keep the action menu above the table's scrolling/overflow container.
 // The popup is temporarily moved to <body> while open, preserving its controls.
+// Floating action menus: keep popover anchored to its own trigger even inside scrolling tables.
 (() => {
   const menus = [...document.querySelectorAll('.active-action-menu')];
+  const popups = new Map(menus.map(menu => [menu, menu.querySelector('.active-action-popover')]));
   let active = null;
-  const margin = 8;
-
-  function closeMenu(menu) {
+  const gap = 7, edge = 10;
+  function close(menu) {
     if (!menu) return;
+    const popup = popups.get(menu);
     menu.open = false;
-    const popup = menu.querySelector('.active-action-popover');
-    if (popup && popup.parentElement !== menu) {
-      menu.appendChild(popup);
-      popup.classList.remove('active-action-floating');
-      popup.style.removeProperty('left');
-      popup.style.removeProperty('top');
-      popup.style.removeProperty('bottom');
-      popup.style.removeProperty('right');
-      popup.style.removeProperty('visibility');
-    }
+    if (popup && popup.parentElement !== menu) menu.appendChild(popup);
+    if (popup) { popup.classList.remove('active-action-floating'); popup.removeAttribute('style'); }
     if (active === menu) active = null;
   }
-
-  function positionPopup() {
+  function place() {
     if (!active || !active.open) return;
-    const trigger = active.querySelector('summary');
-    const popup = active.querySelector('.active-action-popover');
-    if (!trigger || !popup) return;
-    const rect = trigger.getBoundingClientRect();
-    const width = popup.offsetWidth;
-    const height = popup.offsetHeight;
-    const roomBelow = window.innerHeight - rect.bottom;
-    const roomAbove = rect.top;
-    const above = roomBelow < height + margin && roomAbove > roomBelow;
-    const top = above ? Math.max(margin, rect.top - height - 6) : Math.min(window.innerHeight - height - margin, rect.bottom + 6);
-    const left = Math.max(margin, Math.min(rect.right - width, window.innerWidth - width - margin));
-    popup.style.left = `${left}px`;
-    popup.style.top = `${Math.max(margin, top)}px`;
+    const popup = popups.get(active), trigger = active.querySelector('summary');
+    if (!popup || !trigger) return;
+    const r = trigger.getBoundingClientRect();
+    const w = popup.offsetWidth, h = popup.offsetHeight;
+    const upward = window.innerHeight - r.bottom < h + gap + edge && r.top > h + gap + edge;
+    const top = upward ? r.top - h - gap : r.bottom + gap;
+    popup.style.setProperty('top', Math.max(edge, Math.min(top, window.innerHeight - h - edge)) + 'px', 'important');
+    popup.style.setProperty('left', Math.max(edge, Math.min(r.right - w, window.innerWidth - w - edge)) + 'px', 'important');
   }
-
   menus.forEach(menu => {
     menu.addEventListener('toggle', () => {
-      if (!menu.open) { closeMenu(menu); return; }
-      if (active && active !== menu) closeMenu(active);
+      if (!menu.open) { if (active === menu) close(menu); return; }
+      if (active && active !== menu) close(active);
       active = menu;
-      const popup = menu.querySelector('.active-action-popover');
+      const popup = popups.get(menu);
       if (!popup) return;
       popup.classList.add('active-action-floating');
-      popup.style.visibility = 'hidden';
       document.body.appendChild(popup);
-      positionPopup();
-      popup.style.visibility = 'visible';
+      place();
     });
-    menu.querySelectorAll('button,a').forEach(control => {
-      control.addEventListener('click', () => closeMenu(menu));
-    });
+    const popup = popups.get(menu);
+    popup?.querySelectorAll('button,a').forEach(control => control.addEventListener('click', () => close(menu)));
   });
   document.addEventListener('pointerdown', event => {
-    if (!active) return;
-    const popup = document.querySelector('body > .active-action-popover.active-action-floating');
-    if (!active.contains(event.target) && !(popup && popup.contains(event.target))) closeMenu(active);
+    if (active && !active.contains(event.target) && !popups.get(active)?.contains(event.target)) close(active);
   });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && active) { closeMenu(active); }
-  });
-  window.addEventListener('resize', positionPopup);
-  window.addEventListener('scroll', positionPopup, true);
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') close(active); });
+  window.addEventListener('resize', place);
+  window.addEventListener('scroll', place, true);
 })();
