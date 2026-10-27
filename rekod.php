@@ -107,17 +107,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Rekod Perkhidmatan | e-Servis Digital@AMDI</title>
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css">
+    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css?v=20261027-font-fix2">
     <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css">
     <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/record-service.css">
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/active-requests.css">
     <script src="<?= APP_BASE ?>/assets/js/active-requests.js" defer></script>
     <script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script>
     <style>
         /* Wizard layout scoped to create.php; shared sidebar and Izzah's pages unchanged. */
         .stepper-card {
-            max-width: 1060px;
-            margin-inline: auto;
+            max-width: none;
+            width: 100%;
+            margin-inline: 0;
             border: 1px solid #eae5f2 !important;
             border-radius: 22px !important;
             box-shadow: 0 15px 38px rgba(44, 25, 76, .055) !important;
@@ -423,7 +423,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .record-main {
-            padding-top: 24px
+            max-width: 1650px;
+            margin-inline: auto;
+            padding: 26px clamp(16px, 3vw, 42px) 64px;
         }
     </style>
 </head>

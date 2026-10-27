@@ -141,3 +141,31 @@
   background: #d8f4e8;
   color: #087454;
 }
+
+
+/* e-Servis Digital@AMDI — unified typography for Dashboard, History and Payments.
+   Loaded after page CSS; visual-only overrides. */
+.amdi-type,
+.amdi-type button, .amdi-type input, .amdi-type select,
+.amdi-type textarea, .amdi-type table, .amdi-type dialog {
+  font-family: "Segoe UI", Arial, sans-serif !important;
+}
+.amdi-type { font-size: 15px; line-height: 1.5; }
+.amdi-type h1 { font-size: 28px !important; line-height: 1.2 !important; font-weight: 700; }
+.amdi-type h2 { font-size: 20px; line-height: 1.35; }
+.amdi-type h3 { font-size: 17px; line-height: 1.4; }
+.amdi-type p, .amdi-type li { line-height: 1.5; }
+.amdi-type label, .amdi-type .form-label { font-size: 14px !important; line-height: 1.4; }
+.amdi-type button, .amdi-type input, .amdi-type select,
+.amdi-type textarea, .amdi-type .outline, .amdi-type .dashboard-primary {
+  font-size: 14px !important; line-height: 1.5;
+}
+.amdi-type table { font-size: 14px !important; }
+.amdi-type table th { font-size: 12px !important; line-height: 1.4; }
+.amdi-type table td { font-size: 14px !important; line-height: 1.5; }
+.amdi-type .sidebar-nav a, .amdi-type .sidebar-menu a,
+.amdi-type .sidebar-link { font-size: 15px !important; }
+.amdi-type .sidebar-brand strong { font-size: 16px !important; }
+.amdi-type .sidebar-brand div > span { font-size: 12px !important; }
+/* Keep the dashboard action aligned when its redundant heading is removed. */
+.amdi-type .dashboard-intro { justify-content: flex-end; }

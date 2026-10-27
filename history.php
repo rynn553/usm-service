@@ -192,13 +192,12 @@ function history_page_url(
           href="<?= APP_BASE ?>/assets/css/dashboard.css">
 
     <link rel="stylesheet"
-          href="<?= APP_BASE ?>/assets/css/history.css">
-
+          href="<?= APP_BASE ?>/assets/css/history.css?v=20261027c">
     <script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script>
     <script src="<?= APP_BASE ?>/assets/js/history.js" defer></script>
 </head>
 
-<body class="workspace">
+<body class="workspace amdi-type">
     <?php require __DIR__ . '/includes/sidebar.php'; ?>
 
     <div class="dashboard-area">

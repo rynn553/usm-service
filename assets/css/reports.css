@@ -224,3 +224,28 @@
     outline: 2px solid #6026a4;
     outline-offset: 3px;
 }
+
+/* Unified typography — Laporan Perkhidmatan. Existing stylesheet only. */
+.amdi-type,
+.amdi-type button, .amdi-type input, .amdi-type select,
+.amdi-type textarea, .amdi-type table {
+  font-family: "Segoe UI", Arial, sans-serif !important;
+}
+.amdi-type { font-size: 15px; line-height: 1.5; }
+.amdi-type .dashboard-header h1 { font-size: 28px !important; line-height: 1.2 !important; font-weight: 700; }
+.amdi-type h2 { font-size: 20px; line-height: 1.35; }
+.amdi-type h3 { font-size: 17px; line-height: 1.4; }
+.amdi-type p { line-height: 1.5; }
+.amdi-type .report-filter label { font-size: 14px !important; line-height: 1.4; }
+.amdi-type .report-filter input, .amdi-type .report-filter select,
+.amdi-type .report-button, .amdi-type .report-reset,
+.amdi-type .report-export, .amdi-type .logout-button {
+  font-family: "Segoe UI", Arial, sans-serif !important;
+  font-size: 14px !important; line-height: 1.5;
+}
+.amdi-type .report-table-panel table { font-size: 14px !important; }
+.amdi-type .report-table-panel th { font-size: 12px !important; line-height: 1.4; }
+.amdi-type .report-table-panel td { font-size: 14px !important; line-height: 1.5; }
+.amdi-type .sidebar-nav a { font-size: 15px !important; }
+.amdi-type .sidebar-brand strong { font-size: 16px !important; }
+.amdi-type .sidebar-brand div > span { font-size: 12px !important; }

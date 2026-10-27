@@ -163,12 +163,11 @@ if (isset($_GET['uid']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet"
           href="<?= APP_BASE ?>/assets/css/dashboard.css">
     <link rel="stylesheet"
-          href="<?= APP_BASE ?>/assets/css/payments.css">
-
+          href="<?= APP_BASE ?>/assets/css/payments.css?v=20261027c">
     <script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script>
 </head>
 
-<body class="workspace">
+<body class="workspace amdi-type">
     <?php require __DIR__ . '/../includes/sidebar.php'; ?>
 
     <div class="dashboard-area">

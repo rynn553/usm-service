@@ -20,12 +20,12 @@ $labels = ['in_progress' => 'In Progress', 'ready' => 'Ready', 'completed' => 'C
     <title>Papan Pemuka | Perkhidmatan USM</title>
     <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css">
     <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css">
-    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/dashboard.css">
+    <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/dashboard.css?v=20261027c">
     <script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script>
     <script src="<?= APP_BASE ?>/assets/js/dashboard.js" defer></script>
 </head>
 
-<body class="workspace"><?php $activePage = 'home';
+<body class="workspace amdi-type"><?php $activePage = 'home';
                         require __DIR__ . '/includes/sidebar.php'; ?>
     <div class="dashboard-area">
         <header class="dashboard-header">
@@ -36,10 +36,7 @@ $labels = ['in_progress' => 'In Progress', 'ready' => 'Ready', 'completed' => 'C
         </header>
         <main class="dashboard-main" id="main-content" tabindex="-1">
             <div class="dashboard-intro">
-                <div>
-                    <h2>Ringkasan perkhidmatan</h2>
-                    <p>Ringkasan terkini permintaan perkhidmatan yang direkodkan.</p>
-                </div><a class="dashboard-primary" href="<?= APP_BASE ?>/rekod.php">+ Rekod perkhidmatan</a>
+<a class="dashboard-primary" href="<?= APP_BASE ?>/rekod.php">+ Rekod perkhidmatan</a>
             </div>
             <section class="stats-grid" aria-label="Statistik perkhidmatan">
                 <div class="stat-card"><span>Jumlah Bayaran Diterima</span><strong>RM <?= number_format((float)$summary['total_cost'], 2) ?></strong><small>Bagi perkhidmatan yang selesai dan dibayar</small></div>

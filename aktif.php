@@ -41,7 +41,7 @@ $search = mb_substr(trim(is_string($_GET['q'] ?? null) ? $_GET['q'] : ''), 0, 12
 $status = (string)($_GET['status'] ?? 'all');
 if (!in_array($status, ['all', 'in_progress', 'ready'], true)) $status = 'all';
 $sort = (string)($_GET['sort'] ?? 'status_first');
-if (!in_array($sort, ['status_first','newest','oldest','ready_first','uid_asc','uid_desc'], true)) $sort = 'status_first';
+if (!in_array($sort, ['status_first','newest','oldest'], true)) $sort = 'status_first';
 $date = is_string($_GET['date'] ?? null) ? trim($_GET['date']) : '';
 if ($date !== '' && (!preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $date) || !DateTimeImmutable::createFromFormat('!Y-m-d', $date) || DateTimeImmutable::createFromFormat('!Y-m-d', $date)->format('Y-m-d') !== $date)) $date = '';
 $page = filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = (string)($_POST['action'] ?? '');
   $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
   parse_str(is_string($_POST['return'] ?? null) ? $_POST['return'] : '', $ret);
-  $safeReturn = http_build_query(['q' => mb_substr(trim(is_string($ret['q'] ?? null) ? $ret['q'] : ''), 0, 120), 'status' => in_array($ret['status'] ?? '', ['in_progress', 'ready'], true) ? $ret['status'] : 'all', 'date' => is_string($ret['date'] ?? null) ? $ret['date'] : '', 'sort' => in_array($ret['sort'] ?? '', ['status_first','newest','oldest','ready_first','uid_asc','uid_desc'], true) ? $ret['sort'] : 'status_first', 'page' => filter_var($ret['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1]);
+  $safeReturn = http_build_query(['q' => mb_substr(trim(is_string($ret['q'] ?? null) ? $ret['q'] : ''), 0, 120), 'status' => in_array($ret['status'] ?? '', ['in_progress', 'ready'], true) ? $ret['status'] : 'all', 'date' => is_string($ret['date'] ?? null) ? $ret['date'] : '', 'sort' => in_array($ret['sort'] ?? '', ['status_first','newest','oldest'], true) ? $ret['sort'] : 'status_first', 'page' => filter_var($ret['page'] ?? 1, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1]);
   if (!valid_csrf() || !$id || !in_array($action, ['ready', 'edit'], true)) {
     $_SESSION['active_flash'] = ['error', 'Permintaan tidak sah.'];
     go_back($safeReturn);
@@ -112,10 +112,8 @@ try {
   $offset = ($page - 1) * 10;
   $sortSql = match ($sort) {
     'status_first' => "CASE WHEN r.status='in_progress' THEN 0 ELSE 1 END,r.id ASC",
+    'newest' => 'r.requested_at DESC,r.id DESC',
     'oldest' => 'r.requested_at ASC,r.id ASC',
-    'ready_first' => "CASE WHEN r.status='ready' THEN 0 ELSE 1 END,r.requested_at DESC,r.id DESC",
-    'uid_asc' => 'r.id ASC',
-    'uid_desc' => 'r.id DESC',
     default => "CASE WHEN r.status='in_progress' THEN 0 ELSE 1 END,r.id ASC",
   };
   $stmt = $pdo->prepare('SELECT r.*,d.name AS department_name,t.name AS service_type_name,h.name AS handler_name' . $from . ' WHERE ' . implode(' AND ', $conditions) . ' ORDER BY ' . $sortSql . ' LIMIT 10 OFFSET ' . $offset);
@@ -144,9 +142,8 @@ function page_url(int $page, string $q, string $status, string $date, string $so
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Permintaan Aktif | Perkhidmatan USM</title>
-  <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css">
+  <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css?v=20261027-filter-clean">
   <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css">
-  <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/active-requests.css">
   <script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script>
   <script src="<?= APP_BASE ?>/assets/js/active-requests.js" defer></script>
 </head>
@@ -171,10 +168,13 @@ function page_url(int $page, string $q, string $status, string $date, string $so
           </div>
           <div class="active-filter-options-row">
             <div class="active-filter-status"><label for="status">Status</label><select id="status" name="status"><option value="all">Semua Status</option><option value="in_progress" <?= $status === 'in_progress' ? 'selected' : '' ?>>In Progress</option><option value="ready" <?= $status === 'ready' ? 'selected' : '' ?>>Ready</option></select></div>
-            <div class="active-filter-date"><label for="date">Tarikh</label><input type="date" id="date" name="date" value="<?= e($date) ?>"></div>
-            <div class="active-filter-sort"><label for="sort">Susun Ikut</label><select id="sort" name="sort"><option value="status_first" <?= $sort === 'status_first' ? 'selected' : '' ?>>Pilih</option><option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Terbaharu</option><option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Terlama</option><option value="ready_first" <?= $sort === 'ready_first' ? 'selected' : '' ?>>Ready Dahulu</option><option value="uid_asc" <?= $sort === 'uid_asc' ? 'selected' : '' ?>>UID Menaik</option><option value="uid_desc" <?= $sort === 'uid_desc' ? 'selected' : '' ?>>UID Menurun</option></select></div>
+            <div class="active-filter-sort"><label for="sort">Susunan</label><select id="sort" name="sort"><option value="status_first" <?= $sort === 'status_first' ? 'selected' : '' ?>>Keutamaan Status</option><option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Terbaharu</option><option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Terlama</option></select></div>
             <a class="active-clear" href="<?= APP_BASE ?>/aktif.php">Reset</a>
           </div>
+          <details class="active-advanced-filter" <?= $date !== '' ? 'open' : '' ?>>
+            <summary>Filter Lanjutan <?= $date !== '' ? '• Tarikh dipilih' : '' ?><span aria-hidden="true" class="active-advanced-chevron"></span></summary>
+            <div class="active-advanced-content"><div class="active-filter-date"><label for="date">Tarikh Permintaan</label><input type="date" id="date" name="date" value="<?= e($date) ?>"></div><button type="submit" class="active-search-btn">Terapkan Filter</button></div>
+          </details>
         </form>
         <div class="active-table-wrap">
           <table class="active-table"><thead><tr><th>UID</th><th>NAMA STAF/PELAJAR</th><th>TARIKH</th><th>STATUS</th><th>KOS</th><th>PENGENDALI</th><th class="active-action-head">TINDAKAN</th></tr></thead><tbody>
@@ -182,10 +182,10 @@ function page_url(int $page, string $q, string $status, string $date, string $so
             <td data-label="UID"><span class="active-uid">#<?= (int)$r['id'] ?></span></td>
             <td data-label="Nama Staf/Pelajar"><strong class="active-person"><?= e($r['requester_name']) ?></strong><small class="active-subtext"><?= e($r['department_name']) ?></small></td>
             <td data-label="Tarikh"><span class="active-nowrap"><?= e(display_date($r['requested_at'])) ?></span></td>
-            <td data-label="Status"><span class="active-badge <?= $r['status'] === 'ready' ? 'ready' : 'progress' ?>"><?= $r['status'] === 'ready' ? 'Sedia Diambil' : 'Dalam Proses' ?></span></td>
+            <td data-label="Status"><span class="active-badge <?= $r['status'] === 'ready' ? 'ready' : 'progress' ?>"><?= $r['status'] === 'ready' ? 'Ready' : 'In Progress' ?></span></td>
             <td data-label="Kos"><span class="active-nowrap">RM <?= number_format((float)$r['estimated_cost'], 2) ?></span></td>
             <td data-label="Pengendali"><?= e($r['handler_name']) ?></td>
-            <td data-label="Tindakan" class="active-action-cell"><div class="active-action-controls"><button type="button" class="active-details-button details-trigger" data-id="<?= (int)$r['id'] ?>" aria-label="Lihat butiran UID <?= (int)$r['id'] ?>">Butiran</button><details class="active-action-menu"><summary aria-label="Tindakan untuk UID <?= (int)$r['id'] ?>">Tindakan <span aria-hidden="true">⌄</span></summary><div class="active-action-popover"><button type="button" class="edit-trigger" data-id="<?= (int)$r['id'] ?>">Edit Rekod</button><?php if ($r['status'] === 'in_progress'): ?><button type="button" class="ready-trigger" data-id="<?= (int)$r['id'] ?>" data-uid="UID #<?= (int)$r['id'] ?>">Tandakan Sedia Diambil</button><?php else: ?><a href="<?= APP_BASE ?>/payments/index.php?uid=<?= urlencode((string)$r['uid']) ?>">Complete ↗</a><?php endif; ?></div></details></div></td>
+            <td data-label="Tindakan" class="active-action-cell"><div class="active-action-controls"><button type="button" class="active-details-button details-trigger" data-id="<?= (int)$r['id'] ?>" aria-label="Lihat butiran UID <?= (int)$r['id'] ?>">Butiran</button><details class="active-action-menu"><summary aria-label="Tindakan untuk UID <?= (int)$r['id'] ?>">Tindakan <span aria-hidden="true">⌄</span></summary><div class="active-action-popover"><button type="button" class="edit-trigger" data-id="<?= (int)$r['id'] ?>">Edit Rekod</button><?php if ($r['status'] === 'in_progress'): ?><button type="button" class="ready-trigger" data-id="<?= (int)$r['id'] ?>" data-uid="UID #<?= (int)$r['id'] ?>">Tandakan Ready</button><?php else: ?><a href="<?= APP_BASE ?>/payments/index.php?uid=<?= urlencode((string)$r['uid']) ?>">Complete ↗</a><?php endif; ?></div></details></div></td>
           </tr><?php endforeach; ?>
           <?php if (!$rows): ?><tr><td colspan="7" class="active-empty"><strong>Tiada permintaan dijumpai</strong><span>Cuba ubah carian atau filter yang dipilih.</span></td></tr><?php endif; ?>
           </tbody></table>
@@ -195,13 +195,26 @@ function page_url(int $page, string $q, string $status, string $date, string $so
     </main>
   </div>
   <?php foreach ($rows as $r): ?><template id="active-data-<?= (int)$r['id'] ?>">
-      <div class="active-detail-grid">
+      <div class="active-detail-layout">
+        <section class="active-detail-section">
+          <h3><span class="active-section-icon" aria-hidden="true">#</span> Ringkasan Permintaan</h3>
+          <div class="active-detail-grid">
         <div><small>UID</small><strong>UID #<?= (int)$r['id'] ?></strong></div>
         <div><small>Status</small><strong><?= $r['status'] === 'ready' ? 'Ready' : 'In Progress' ?></strong></div>
+          </div>
+        </section>
+        <section class="active-detail-section">
+          <h3><span class="active-section-icon" aria-hidden="true">01</span> Maklumat Pemohon</h3>
+          <div class="active-detail-grid">
         <div><small>Nama Staf/Pelajar</small><strong><?= e($r['requester_name']) ?></strong></div>
         <div><small>Jabatan/Pusat Pengajian</small><strong><?= e($r['department_name']) ?></strong></div>
         <div><small>Telefon</small><strong><?= e($r['requester_phone'] ?: '—') ?></strong></div>
         <div><small>Emel</small><strong><?= e($r['requester_email'] ?: '—') ?></strong></div>
+          </div>
+        </section>
+        <section class="active-detail-section">
+          <h3><span class="active-section-icon" aria-hidden="true">02</span> Maklumat Peranti</h3>
+          <div class="active-detail-grid">
         <div><small>Pemilikan</small><strong><?= ($r['device_ownership'] ?? '') === 'usm' ? 'Aset USM' : (($r['device_ownership'] ?? '') === 'personal' ? 'Peribadi' : '—') ?></strong></div>
         <div><small>Jenis Peranti</small><strong><?= e(($r['device_type'] ?? '') === 'Other' ? $r['device_type_other'] : ($r['device_type'] ?: '—')) ?></strong></div>
         <div><small>Jenama / Model</small><strong><?= e(trim(($r['device_brand'] ?? '') . ' ' . ($r['device_model'] ?? '')) ?: '—') ?></strong></div>
@@ -212,6 +225,11 @@ function page_url(int $page, string $q, string $status, string $date, string $so
         <div class="active-full"><small>Catatan Keadaan</small>
           <p><?= nl2br(e($r['condition_notes'] ?: '—')) ?></p>
         </div>
+          </div>
+        </section>
+        <section class="active-detail-section">
+          <h3><span class="active-section-icon" aria-hidden="true">03</span> Maklumat Perkhidmatan</h3>
+          <div class="active-detail-grid">
         <div class="active-full"><small>Jenis Perkhidmatan</small><strong><?= e(implode(', ', array_map(static fn($id) => $typeNames[$id] ?? 'Tidak diketahui', $r['service_type_ids']))) ?></strong></div>
         <div><small>Pengendali Staf IT</small><strong><?= e($r['handler_name']) ?></strong></div>
         <div><small>Kos</small><strong>RM <?= number_format((float)$r['estimated_cost'], 2) ?></strong></div>
@@ -225,6 +243,8 @@ function page_url(int $page, string $q, string $status, string $date, string $so
             <p>No. Siri Lama: <?= e($h['old_serial'] ?: '—') ?> | No. Siri Baharu: <?= e($h['new_serial'] ?: '—') ?></p>
             <p>Catatan: <?= e($h['notes'] ?: '—') ?></p>
           </div><?php endforeach; ?>
+          </div>
+        </section>
       </div>
     </template><?php endforeach; ?>
   <dialog id="details-dialog" class="active-dialog">
@@ -232,13 +252,13 @@ function page_url(int $page, string $q, string $status, string $date, string $so
       <div><span class="active-dialog-kicker">REKOD PERKHIDMATAN</span><h2>Butiran Permintaan</h2></div><button type="button" class="dialog-close" aria-label="Tutup">×</button>
     </div>
     <div id="details-body"></div>
-    <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Tutup</button></div>
   </dialog>
   <dialog id="edit-dialog" class="active-dialog">
     <div class="active-dialog-head">
       <div><span class="active-dialog-kicker">KEMAS KINI MAKLUMAT</span><h2>Edit Rekod Perkhidmatan</h2></div><button type="button" class="dialog-close" aria-label="Tutup">×</button>
     </div>
     <form id="edit-form" method="post" action="<?= APP_BASE ?>/aktif.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="edit"><input type="hidden" name="id" id="edit-id"><input type="hidden" name="return" value="<?= e($back) ?>">
+      <section class="active-edit-section">
       <div class="record-section-heading"><span>01</span><h3>Maklumat Pemohon</h3></div>
       <div class="active-edit-grid">
         <div><label for="edit-name">Nama Staf/Pelajar *</label><input id="edit-name" name="requester_name" maxlength="150" required></div>
@@ -246,6 +266,8 @@ function page_url(int $page, string $q, string $status, string $date, string $so
         <div><label>No. Telefon (Pilihan)</label><input name="requester_phone" maxlength="30"></div>
         <div><label>Emel (Pilihan)</label><input type="email" name="requester_email" maxlength="190"></div>
       </div>
+      </section>
+      <section class="active-edit-section">
       <div class="record-section-heading"><span>02</span>
         <h3>Maklumat Peranti</h3>
       </div>
@@ -277,6 +299,8 @@ function page_url(int $page, string $q, string $status, string $date, string $so
           </select></div>
         <div><label>Catatan Keadaan (Pilihan)</label><textarea name="condition_notes" maxlength="1000" rows="2"></textarea></div>
       </div>
+      </section>
+      <section class="active-edit-section">
       <div class="record-section-heading"><span>03</span><h3>Maklumat Perkhidmatan</h3></div>
       <div class="active-edit-grid">
         <div class="active-full"><label>Jenis Perkhidmatan *</label><?php $selectedTypeIds = []; ?><?php /* Include inside a form. Set $multiPrefix to 'edit-' for edit dialog. */ ?>
@@ -301,6 +325,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
         <div><label for="edit-date">Tarikh/Masa Permintaan *</label><input id="edit-date" name="requested_at" type="datetime-local" required></div>
         <div class="active-full"><label for="edit-handler">Pengendali Staf IT *</label><select id="edit-handler" name="handler_id" required><?php foreach ($handlers as $item): ?><option value="<?= (int)$item['id'] ?>"><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
       </div>
+      </section>
       <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Batal</button><button class="active-primary" type="submit">Simpan Perubahan</button></div>
     </form>
   </dialog>
@@ -308,7 +333,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
     <div class="active-dialog-head">
       <h2>Sahkan Status Ready</h2><button type="button" class="dialog-close" aria-label="Tutup">×</button>
     </div>
-    <p>Adakah anda pasti perkhidmatan <strong id="ready-uid"></strong> telah siap dan sedia untuk diambil?</p>
+    <p>Adakah anda pasti perkhidmatan <strong id="ready-uid"></strong> telah siap dan berstatus Ready?</p>
     <form method="post" action="<?= APP_BASE ?>/aktif.php"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="ready"><input type="hidden" name="id" id="ready-id"><input type="hidden" name="return" value="<?= e($back) ?>">
       <div class="active-dialog-foot"><button type="button" class="active-outline dialog-close">Batal</button><button type="submit" class="active-primary">Ya, Tandakan Ready</button></div>
     </form>
