@@ -229,3 +229,36 @@ input:not([type="hidden"]) {
     padding: 18px;
   }
 }
+
+/* Shared typography standard — e-Servis Digital@AMDI */
+:root { --amdi-font: Inter, "Segoe UI", Arial, sans-serif; --amdi-text: 15px; }
+html { font-size: 16px; }
+body, button, input, select, textarea, option, table, th, td {
+  font-family: var(--amdi-font) !important;
+}
+body { font-size: var(--amdi-text); line-height: 1.5; }
+button, input, select, textarea { font-size: 14px; line-height: 1.5; }
+/* Shared navigation */
+.sidebar, .sidebar a, .sidebar button { font-family: var(--amdi-font) !important; }
+.sidebar nav a, .sidebar-menu a, .sidebar-link { font-size: 15px !important; }
+.sidebar-brand strong { font-size: 16px !important; line-height: 1.25; }
+.sidebar-brand div > span { font-size: 12px !important; line-height: 1.4; }
+/* Page headings: keep original spacing and color */
+.dashboard-header h1, .active-header h1, .record-header h1,
+.page-header h1, .workspace-header h1, .service-header h1 {
+  font-family: var(--amdi-font) !important;
+  font-size: 28px !important;
+  font-weight: 750;
+  line-height: 1.2;
+}
+/* Consistent field, action and table typography */
+label, .form-label { font-family: var(--amdi-font) !important; font-size: 14px; }
+button, .logout-button { font-family: var(--amdi-font) !important; }
+.table-wrap table, .requests-table, .dashboard-table, .history-table,
+.payments-table { font-size: 14px; }
+.table-wrap th, .requests-table th, .dashboard-table th,
+.history-table th, .payments-table th {
+  font-size: 12px !important; font-weight: 700;
+}
+.table-wrap td, .requests-table td, .dashboard-table td,
+.history-table td, .payments-table td { font-size: 14px; }

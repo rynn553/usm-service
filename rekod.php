@@ -337,6 +337,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             outline-offset: 1px
         }
 
+
+/* Searchable Jabatan/Pusat Pengajian dropdown */
+.department-field,.department-picker{position:relative;min-width:0}
+.department-trigger{width:100%;min-height:56px;padding:12px 16px;background:#fff;border:1px solid #d8c9e8;border-radius:11px;color:#35214e;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;font:inherit;cursor:pointer}
+.department-trigger:focus-visible{outline:2px solid #b998e0;outline-offset:2px}
+.department-chevron{width:9px;height:9px;flex:none;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-right:3px;margin-top:-5px}
+.department-trigger[aria-expanded="true"] .department-chevron{transform:rotate(225deg);margin-top:4px}
+.department-popover{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:1000;padding:10px;background:#fff;border:1px solid #d8c9e8;border-radius:12px;box-shadow:0 12px 30px rgba(39,16,70,.14)}
+.department-popover[hidden],.department-empty[hidden]{display:none!important}
+.department-popover input{box-sizing:border-box;width:100%;height:42px;min-height:42px;padding:9px 12px;border:1px solid #d8c9e8;border-radius:8px;font:inherit}
+.department-options{max-height:210px;overflow-y:auto;margin-top:7px}
+.department-option{display:block;width:100%;padding:10px 12px;border:0;border-radius:7px;background:transparent;text-align:left;color:#35214e;font:inherit;cursor:pointer}
+.department-option:hover,.department-option:focus-visible,.department-option[aria-selected="true"]{background:#f2ebfa}
+.department-empty{padding:12px;color:#796c89;font-size:13px}
+.department-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;left:0;bottom:0;padding:0!important;border:0!important}
+@media(max-width:650px){.department-popover{max-width:100%}.department-trigger{min-height:50px}}
+
         @keyframes wizardIn {
             from {
                 opacity: .4;
@@ -417,7 +434,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="record-area">
         <header class="record-header">
             <div>
-                <p class="eyebrow">SISTEM PENGURUSAN PERKHIDMATAN IT</p>
+                
                 <h1>Rekod Perkhidmatan</h1>
             </div>
             <form action="<?= APP_BASE ?>/logout.php" method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><button class="record-logout" type="submit">Log Keluar ↗</button></form>
@@ -442,9 +459,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="record-grid">
                             <div><label for="requester_name">Nama Staf/Pelajar *</label><input id="requester_name" name="requester_name" maxlength="150" required value="<?= e($old['requester_name']) ?>"></div>
-                            <div><label for="department_id">Jabatan/Pusat Pengajian *</label><select id="department_id" name="department_id" required>
-                                    <option value="">Pilih jabatan/pusat pengajian</option><?php foreach ($departments as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id'] === $old['department_id'] ? 'selected' : '' ?>><?= e($item['name']) ?></option><?php endforeach; ?>
-                                </select></div>
+                            <div class="department-field"><label id="department-label" for="department-search">Jabatan/Pusat Pengajian *</label>
+                                <div class="department-picker" id="department-picker">
+                                    <button type="button" class="department-trigger" id="department-trigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="department-label department-trigger"><span id="department-selected">Pilih jabatan/pusat pengajian</span><span class="department-chevron" aria-hidden="true"></span></button>
+                                    <div class="department-popover" id="department-popover" hidden>
+                                        <input id="department-search" type="search" autocomplete="off" placeholder="Cari jabatan/pusat pengajian..." aria-label="Cari jabatan/pusat pengajian">
+                                        <div class="department-options" id="department-options" role="listbox" aria-label="Senarai jabatan/pusat pengajian"></div>
+                                        <p class="department-empty" id="department-empty" hidden>Tiada jabatan ditemui.</p>
+                                    </div>
+                                    <select id="department_id" name="department_id" class="department-native" tabindex="-1" aria-hidden="true">
+                                        <option value="">Pilih jabatan/pusat pengajian</option><?php foreach ($departments as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id'] === $old['department_id'] ? 'selected' : '' ?>><?= e($item['name']) ?></option><?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
                             <div><label for="requester_phone">No. Telefon (Pilihan)</label><input id="requester_phone" name="requester_phone" maxlength="30" value="<?= e($deviceData['requester_phone'] ?? '') ?>"></div>
                             <div><label for="requester_email">Emel (Pilihan)</label><input type="email" id="requester_email" name="requester_email" maxlength="190" value="<?= e($deviceData['requester_email'] ?? '') ?>"></div>
                         </div>
@@ -578,11 +605,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
 
+
+            // Dropdown carian jabatan: kekalkan select asal sebagai nilai yang dihantar ke PHP.
+            const departmentPicker = document.getElementById('department-picker');
+            if (departmentPicker) {
+                const native = document.getElementById('department_id');
+                const trigger = document.getElementById('department-trigger');
+                const selected = document.getElementById('department-selected');
+                const popover = document.getElementById('department-popover');
+                const search = document.getElementById('department-search');
+                const list = document.getElementById('department-options');
+                const empty = document.getElementById('department-empty');
+                const options = Array.from(native.options).filter(opt => opt.value);
+                const sync = () => {
+                    selected.textContent = native.selectedOptions[0]?.value ? native.selectedOptions[0].textContent.trim() : 'Pilih jabatan/pusat pengajian';
+                    trigger.dataset.empty = native.value ? 'false' : 'true';
+                };
+                const close = () => {popover.hidden = true;trigger.setAttribute('aria-expanded','false');};
+                const render = () => {
+                    const query = search.value.trim().toLocaleLowerCase();
+                    list.replaceChildren();
+                    const matches = options.filter(opt => opt.textContent.toLocaleLowerCase().includes(query));
+                    matches.forEach(opt => {
+                        const button = document.createElement('button');
+                        button.type = 'button';button.className = 'department-option';
+                        button.setAttribute('role','option');button.setAttribute('aria-selected',String(opt.value === native.value));
+                        button.textContent = opt.textContent;
+                        button.addEventListener('click',() => {native.value=opt.value;native.dispatchEvent(new Event('change',{bubbles:true}));sync();close();trigger.focus();});
+                        list.append(button);
+                    });
+                    empty.hidden = matches.length > 0;
+                };
+                trigger.addEventListener('click',() => {
+                    if (!popover.hidden) {close();return;}
+                    popover.hidden = false;trigger.setAttribute('aria-expanded','true');search.value='';render();search.focus();
+                });
+                search.addEventListener('input',render);
+                search.addEventListener('keydown',event => {
+                    if(event.key==='Escape'){close();trigger.focus();}
+                    if(event.key==='ArrowDown'){event.preventDefault();list.querySelector('button')?.focus();}
+                    if(event.key==='Enter'){event.preventDefault();list.querySelector('button')?.click();}
+                });
+                list.addEventListener('keydown',event => {
+                    if(event.key==='Escape'){close();trigger.focus();}
+                    if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+                        event.preventDefault();const buttons=[...list.querySelectorAll('button')];const i=buttons.indexOf(document.activeElement);
+                        buttons[(i+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length]?.focus();
+                    }
+                });
+                document.addEventListener('pointerdown',event => {if(!departmentPicker.contains(event.target))close();});
+                native.addEventListener('change',sync);
+                sync();
+            }
+
             function visibleFields(panel) {
                 return [...panel.querySelectorAll('input,select,textarea')].filter(el => !el.disabled && !el.closest('[hidden]') && el.getClientRects().length > 0);
             }
 
             function validation(step) {
+                if (step === 0 && !document.getElementById('department_id').value) {
+                    document.getElementById('department-trigger').focus();
+                    document.getElementById('department-trigger').click();
+                    alert('Sila pilih jabatan/pusat pengajian.');
+                    return false;
+                }
                 if (step === 2 && costInput && costInput.value.trim() === '') costInput.value = '0.00';
                 const fields = visibleFields(panels[step]);
                 for (const el of fields) {

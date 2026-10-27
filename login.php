@@ -480,7 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="logo-frame">
           <img src="<?= APP_BASE ?>/usm-logo.png" alt="Logo rasmi Universiti Sains Malaysia" width="286" height="232">
         </div>
-        <h1>e-Servis IT@AMDI</h1>
+        <h1>e-Servis Digital@AMDI</h1>
         <p class="brand-subtitle">SISTEM PENGURUSAN PERKHIDMATAN IT</p>
         <div class="brand-rule" aria-hidden="true"></div>
       </div>
