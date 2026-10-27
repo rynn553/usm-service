@@ -8,7 +8,7 @@ $summary = $pdo->query("SELECT COALESCE(
     SUM(CASE WHEN status = 'completed' THEN estimated_cost ELSE 0 END),
     0
 ) AS total_cost, SUM(status='in_progress') AS in_progress, SUM(status='ready') AS ready, SUM(status='completed') AS completed FROM service_requests")->fetch();
-$recent = $pdo->query("SELECT r.uid,r.requester_name,r.requested_at,r.status,r.estimated_cost,r.service_details,h.name AS handler_name,d.name AS department_name,t.name AS service_type_name FROM service_requests r JOIN handlers h ON h.id=r.handler_id JOIN departments d ON d.id=r.department_id JOIN service_types t ON t.id=r.service_type_id ORDER BY r.requested_at DESC,r.id DESC LIMIT 8")->fetchAll();
+$recent = $pdo->query("SELECT r.id,r.uid,r.requester_name,r.requested_at,r.status,r.estimated_cost,r.service_details,h.name AS handler_name,d.name AS department_name,t.name AS service_type_name FROM service_requests r JOIN handlers h ON h.id=r.handler_id JOIN departments d ON d.id=r.department_id JOIN service_types t ON t.id=r.service_type_id ORDER BY r.requested_at DESC,r.id DESC LIMIT 8")->fetchAll();
 $labels = ['in_progress' => 'In Progress', 'ready' => 'Ready', 'completed' => 'Completed'];
 ?>
 <!DOCTYPE html>
@@ -66,7 +66,7 @@ $labels = ['in_progress' => 'In Progress', 'ready' => 'Ready', 'completed' => 'C
                             </tr>
                         </thead>
                         <tbody><?php foreach ($recent as $r): ?><tr>
-                                    <td class="uid"><?= e($r['uid']) ?></td>
+                                    <td class="uid">#<?= (int) $r['id'] ?></td>
                                     <td><?= e($r['requester_name']) ?></td>
                                     <td><?= e(date('d M Y', strtotime($r['requested_at']))) ?></td>
                                     <td><span class="status status-<?= e($r['status']) ?>"><?= e($labels[$r['status']] ?? $r['status']) ?></span></td>
@@ -75,7 +75,7 @@ $labels = ['in_progress' => 'In Progress', 'ready' => 'Ready', 'completed' => 'C
                                     <td>
                                         <button type="button" class="details-button" data-details
                                             aria-haspopup="dialog" aria-controls="request-details"
-                                            aria-label="Lihat butiran <?= e($r['uid']) ?>"
+                                            aria-label="Lihat butiran UID #<?= (int) $r['id'] ?>"
                                             data-record="<?= e(json_encode($r, JSON_THROW_ON_ERROR)) ?>">Butiran</button>
                                     </td>
                                 </tr><?php endforeach; ?><?php if (!$recent): ?><tr>
@@ -94,7 +94,7 @@ $labels = ['in_progress' => 'In Progress', 'ready' => 'Ready', 'completed' => 'C
         <dl class="details-grid">
             <div>
                 <dt>UID</dt>
-                <dd data-field="uid"></dd>
+                <dd data-field="display_uid"></dd>
             </div>
             <div>
                 <dt>Nama staf/pelajar</dt>

@@ -12,6 +12,9 @@ if (detailsDialog) {
       detailsDialog.querySelectorAll("[data-field]").forEach((field) => {
         const key = field.dataset.field;
         let value = record[key];
+        if (key === "display_uid") {
+        value = "#" + record.id;
+        }
         if (key === "status") value = labels[value] || value;
         if (key === "estimated_cost") {
           value =
