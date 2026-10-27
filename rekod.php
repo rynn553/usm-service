@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Rekod Perkhidmatan | e-Servis IT@AMDI</title>
+    <title>Rekod Perkhidmatan | e-Servis Digital@AMDI</title>
     <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css">
     <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css">
     <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/record-service.css">
