@@ -495,8 +495,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="Other">Lain-lain</option>
                                 </select></div>
                             <div data-other-device hidden><label>Nyatakan Jenis Peranti *</label><input name="device_type_other" maxlength="100"></div>
-                            <div><label>Jenama *</label><input name="device_brand" maxlength="120" required placeholder="Contoh: Dell"></div>
-                            <div><label>Model *</label><input name="device_model" maxlength="150" required placeholder="Contoh: Latitude 5420"></div>
+                            <div><label>Jenama *</label><input name="device_brand" maxlength="120" required></div>
+                            <div><label>Model *</label><input name="device_model" maxlength="150" required></div>
                             <div><label>Serial Number (Jika ada)</label><input name="device_serial" maxlength="150"></div>
                             <div data-asset-field><label>No. Aset USM (Jika ada)</label><input name="asset_number" maxlength="150"></div>
                             <div class="record-full"><label>Aksesori Diterima (Pilihan)</label>
