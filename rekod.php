@@ -495,8 +495,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="Other">Lain-lain</option>
                                 </select></div>
                             <div data-other-device hidden><label>Nyatakan Jenis Peranti *</label><input name="device_type_other" maxlength="100"></div>
-                            <div><label>Jenama *</label><input name="device_brand" maxlength="120" required placeholder="Contoh: Dell"></div>
-                            <div><label>Model *</label><input name="device_model" maxlength="150" required placeholder="Contoh: Latitude 5420"></div>
+                            <div><label>Jenama *</label><input name="device_brand" maxlength="120" required></div>
+                            <div><label>Model *</label><input name="device_model" maxlength="150" required></div>
                             <div><label>Serial Number (Jika ada)</label><input name="device_serial" maxlength="150"></div>
                             <div data-asset-field><label>No. Aset USM (Jika ada)</label><input name="asset_number" maxlength="150"></div>
                             <div class="record-full"><label>Aksesori Diterima (Pilihan)</label>
@@ -534,7 +534,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
                             <div class="record-full"><label for="service_details">Butiran Jenis Perkhidmatan (Pilihan)</label><textarea id="service_details" name="service_details" rows="4" maxlength="5000"><?= e($old['service_details']) ?></textarea></div>
-                            <div><label for="estimated_cost">Kos (RM) *</label><input id="estimated_cost" name="estimated_cost" type="number" min="0" max="99999999.99" step="0.01" placeholder="0.00" value="<?= e($old['estimated_cost']) ?>" required></div>
+                            <div><label for="estimated_cost">Kos (RM) *</label><input id="estimated_cost" name="estimated_cost" type="number" min="0" max="99999999.99" step="0.01" value="<?= e($old['estimated_cost']) ?>" required></div>
                             <div><label for="requested_at">Tarikh Permintaan *</label><input id="requested_at" name="requested_at" type="date" value="<?= e($old['requested_at']) ?>" required></div>
                             <div class="record-full"><label for="handler_id">Nama Pengendali Staf IT *</label><select id="handler_id" name="handler_id" required>
                                     <option value="">Pilih pengendali staf IT</option><?php foreach ($handlers as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id'] === $old['handler_id'] ? 'selected' : '' ?>><?= e($item['name']) ?></option><?php endforeach; ?>
@@ -562,7 +562,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <option value="replacement">Penukaran perkakasan</option>
                         <option value="installation">Pemasangan baharu</option>
                     </select></div>
-                <div><label>Jenis Perkakasan *</label><input data-field="hardware_type" maxlength="120" placeholder="RAM, SSD, HDD..." required></div>
+                <div><label>Jenis Perkakasan *</label><input data-field="hardware_type" maxlength="120" required></div>
                 <div data-old-fields style="display:contents">
                     <div><label>Model Lama</label><input data-field="old_model" maxlength="255"></div>
                     <div><label>No. Siri Lama</label><input data-field="old_serial" maxlength="150"></div>

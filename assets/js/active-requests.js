@@ -152,7 +152,7 @@
       set("edit-department", r.department_id);
       set("edit-details", r.service_details);
       set("edit-cost", r.estimated_cost);
-      set("edit-date", r.requested_at.slice(0, 10));
+      set("edit-date", r.requested_date_input || "");
       set("edit-handler", r.handler_id);
       edit
         .querySelector("[data-service-multi]")

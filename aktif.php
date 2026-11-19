@@ -145,7 +145,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
   <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/style.css?v=20261027-filter-clean">
   <link rel="stylesheet" href="<?= APP_BASE ?>/assets/css/sidebar.css">
   <script src="<?= APP_BASE ?>/assets/js/sidebar.js" defer></script>
-  <script src="<?= APP_BASE ?>/assets/js/active-requests.js" defer></script>
+  <script src="<?= APP_BASE ?>/assets/js/active-requests.js?v=20261119-date-fix" defer></script>
 </head>
 
 <body class="workspace active-page"><?php $activePage = 'active';
@@ -358,7 +358,10 @@ function page_url(int $page, string $q, string $status, string $date, string $so
   </template>
 
   <script type="application/json" id="active-records-json">
-    <?= json_encode(array_column($rows, null, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?>
+    <?= json_encode(array_column(array_map(static function (array $row): array {
+      $row['requested_date_input'] = !empty($row['requested_at']) ? substr((string)$row['requested_at'], 0, 10) : '';
+      return $row;
+    }, $rows), null, 'id'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?>
   </script>
 </body>
 
