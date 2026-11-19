@@ -347,7 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 .department-popover{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:1000;padding:10px;background:#fff;border:1px solid #d8c9e8;border-radius:12px;box-shadow:0 12px 30px rgba(39,16,70,.14)}
 .department-popover[hidden],.department-empty[hidden]{display:none!important}
 .department-popover input{box-sizing:border-box;width:100%;height:42px;min-height:42px;padding:9px 12px;border:1px solid #d8c9e8;border-radius:8px;font:inherit}
-.department-options{max-height:210px;overflow-y:auto;margin-top:7px}
+.department-options{max-height:135px;overflow-y:auto;overscroll-behavior:contain;margin-top:7px}
 .department-option{display:block;width:100%;padding:10px 12px;border:0;border-radius:7px;background:transparent;text-align:left;color:#35214e;font:inherit;cursor:pointer}
 .department-option:hover,.department-option:focus-visible,.department-option[aria-selected="true"]{background:#f2ebfa}
 .department-empty{padding:12px;color:#796c89;font-size:13px}
@@ -495,8 +495,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option value="Other">Lain-lain</option>
                                 </select></div>
                             <div data-other-device hidden><label>Nyatakan Jenis Peranti *</label><input name="device_type_other" maxlength="100"></div>
-                            <div><label>Jenama *</label><input name="device_brand" maxlength="120" required></div>
-                            <div><label>Model *</label><input name="device_model" maxlength="150" required></div>
+                            <div><label>Jenama *</label><input name="device_brand" maxlength="120" required placeholder="Contoh: Dell"></div>
+                            <div><label>Model *</label><input name="device_model" maxlength="150" required placeholder="Contoh: Latitude 5420"></div>
                             <div><label>Serial Number (Jika ada)</label><input name="device_serial" maxlength="150"></div>
                             <div data-asset-field><label>No. Aset USM (Jika ada)</label><input name="asset_number" maxlength="150"></div>
                             <div class="record-full"><label>Aksesori Diterima (Pilihan)</label>
