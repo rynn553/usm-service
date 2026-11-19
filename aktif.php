@@ -66,11 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $ids = multi_ids($_POST['service_type_ids'] ?? null, $types);
       $hardware = multi_hardware($_POST['hardware'] ?? null, $hardwareTypeId !== null && in_array($hardwareTypeId, $ids, true));
       $deviceData = device_input($_POST);
-      $when = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $fields['requested_at']);
-      if ($fields['requester_name'] === '' || mb_strlen($fields['requester_name']) > 150 || mb_strlen($fields['service_details']) > 5000 || !valid_lookup($departments, $fields['department_id']) || !valid_lookup($handlers, $fields['handler_id']) || !preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D', $fields['estimated_cost']) || !$when || $when->format('Y-m-d\TH:i') !== $fields['requested_at']) throw new InvalidArgumentException('Sila lengkapkan semua medan dengan maklumat yang sah.');
+      $when = DateTimeImmutable::createFromFormat('!Y-m-d', $fields['requested_at']);
+      if ($fields['requester_name'] === '' || mb_strlen($fields['requester_name']) > 150 || mb_strlen($fields['service_details']) > 5000 || !valid_lookup($departments, $fields['department_id']) || !valid_lookup($handlers, $fields['handler_id']) || !preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D', $fields['estimated_cost']) || !$when || $when->format('Y-m-d') !== $fields['requested_at']) throw new InvalidArgumentException('Sila lengkapkan semua medan dengan maklumat yang sah.');
       $pdo->beginTransaction();
-      $stmt = $pdo->prepare("UPDATE service_requests SET requester_name=?,department_id=?,service_type_id=?,service_details=?,estimated_cost=?,requested_at=?,handler_id=? WHERE id=? AND status IN ('in_progress','ready')");
-      $stmt->execute([$fields['requester_name'], (int)$fields['department_id'], $ids[0], $fields['service_details'], $fields['estimated_cost'], $when->format('Y-m-d H:i:s'), (int)$fields['handler_id'], $id]);
+      $stmt = $pdo->prepare("UPDATE service_requests SET requester_name=?,department_id=?,service_type_id=?,service_details=?,estimated_cost=?,requested_at=CONCAT(?, ' ', TIME(requested_at)),handler_id=? WHERE id=? AND status IN ('in_progress','ready')");
+      $stmt->execute([$fields['requester_name'], (int)$fields['department_id'], $ids[0], $fields['service_details'], $fields['estimated_cost'], $when->format('Y-m-d'), (int)$fields['handler_id'], $id]);
       $check = $pdo->prepare("SELECT COUNT(*) FROM service_requests WHERE id=? AND status IN ('in_progress','ready')");
       $check->execute([$id]);
       if (!(int)$check->fetchColumn()) throw new RuntimeException('Rekod sudah selesai atau tidak ditemui.');
@@ -233,8 +233,8 @@ function page_url(int $page, string $q, string $status, string $date, string $so
         <div class="active-full"><small>Jenis Perkhidmatan</small><strong><?= e(implode(', ', array_map(static fn($id) => $typeNames[$id] ?? 'Tidak diketahui', $r['service_type_ids']))) ?></strong></div>
         <div><small>Pengendali Staf IT</small><strong><?= e($r['handler_name']) ?></strong></div>
         <div><small>Kos</small><strong>RM <?= number_format((float)$r['estimated_cost'], 2) ?></strong></div>
-        <div><small>Tarikh/Masa Permintaan</small><strong><?= e(display_date($r['requested_at'], true)) ?></strong></div>
-        <div><small>Tarikh/Masa Ready</small><strong><?= e(display_date($r['ready_at'], true)) ?></strong></div>
+        <div><small>Tarikh Permintaan</small><strong><?= e(display_date($r['requested_at'])) ?></strong></div>
+        <div><small>Tarikh Ready</small><strong><?= e(display_date($r['ready_at'])) ?></strong></div>
         <div class="active-full"><small>Butiran Perkhidmatan</small>
           <p><?= nl2br(e($r['service_details'])) ?></p>
         </div>
@@ -322,7 +322,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
         </div>
         <div class="active-full"><label for="edit-details">Butiran Perkhidmatan (Pilihan)</label><textarea id="edit-details" name="service_details" rows="4" maxlength="5000"></textarea></div>
         <div><label for="edit-cost">Kos (RM) *</label><input id="edit-cost" name="estimated_cost" type="number" placeholder="0.00" min="0" max="99999999.99" step="0.01" required></div>
-        <div><label for="edit-date">Tarikh/Masa Permintaan *</label><input id="edit-date" name="requested_at" type="datetime-local" required></div>
+        <div><label for="edit-date">Tarikh Permintaan *</label><input id="edit-date" name="requested_at" type="date" required></div>
         <div class="active-full"><label for="edit-handler">Pengendali Staf IT *</label><select id="edit-handler" name="handler_id" required><?php foreach ($handlers as $item): ?><option value="<?= (int)$item['id'] ?>"><?= e($item['name']) ?></option><?php endforeach; ?></select></div>
       </div>
       </section>

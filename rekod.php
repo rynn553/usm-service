@@ -10,7 +10,7 @@ require __DIR__ . '/service_multi.php';
 $errors = [];
 $selectedTypeIds = [];
 $postedHardware = [];
-$old = ['requester_name' => '', 'department_id' => '', 'service_type_id' => '', 'service_details' => '', 'estimated_cost' => '', 'requested_at' => date('Y-m-d\TH:i'), 'handler_id' => ''];
+$old = ['requester_name' => '', 'department_id' => '', 'service_type_id' => '', 'service_details' => '', 'estimated_cost' => '', 'requested_at' => date('Y-m-d'), 'handler_id' => ''];
 try {
     $departments = $pdo->query('SELECT id,name FROM departments WHERE is_active=1 ORDER BY name')->fetchAll();
     $types = $pdo->query('SELECT id,name FROM service_types WHERE is_active=1 ORDER BY id')->fetchAll();
@@ -53,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$allowed($types, $old['service_type_id'])) $errors[] = 'Sila pilih jenis perkhidmatan yang sah.';
     if (mb_strlen($old['service_details']) > 5000) $errors[] = 'Butiran perkhidmatan terlalu panjang (maksimum 5000 aksara).';
     if ($old['estimated_cost'] === '' || !preg_match('/^\d{1,8}(?:\.\d{1,2})?$/D', $old['estimated_cost']) || (float)$old['estimated_cost'] > 99999999.99) $errors[] = 'Masukkan kos yang sah (RM0.00 atau lebih).';
-    $when = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $old['requested_at']);
-    if (!$when || $when->format('Y-m-d\TH:i') !== $old['requested_at']) $errors[] = 'Tarikh dan masa permintaan tidak sah.';
+    $when = DateTimeImmutable::createFromFormat('!Y-m-d', $old['requested_at']);
+    if (!$when || $when->format('Y-m-d') !== $old['requested_at']) $errors[] = 'Tarikh permintaan tidak sah.';
     if (!$allowed($handlers, $old['handler_id'])) $errors[] = 'Sila pilih pengendali staf IT yang sah.';
     if (!$errors) {
         try {
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (strlen($uid) > 40) throw new RuntimeException('Had UID telah dicapai.');
             $pdo->beginTransaction();
             $stmt = $pdo->prepare('INSERT INTO service_requests (uid,requester_name,department_id,service_type_id,service_details,estimated_cost,requested_at,handler_id,status,created_by) VALUES (:uid,:requester_name,:department_id,:service_type_id,:service_details,:estimated_cost,:requested_at,:handler_id,\'in_progress\',:created_by)');
-            $stmt->execute(['uid' => $uid, 'requester_name' => $old['requester_name'], 'department_id' => (int)$old['department_id'], 'service_type_id' => (int)$old['service_type_id'], 'service_details' => $old['service_details'], 'estimated_cost' => number_format((float)$old['estimated_cost'], 2, '.', ''), 'requested_at' => $when->format('Y-m-d H:i:s'), 'handler_id' => (int)$old['handler_id'], 'created_by' => (int)$_SESSION['user_id']]);
+            $stmt->execute(['uid' => $uid, 'requester_name' => $old['requester_name'], 'department_id' => (int)$old['department_id'], 'service_type_id' => (int)$old['service_type_id'], 'service_details' => $old['service_details'], 'estimated_cost' => number_format((float)$old['estimated_cost'], 2, '.', ''), 'requested_at' => $when->format('Y-m-d') . ' ' . date('H:i:s'), 'handler_id' => (int)$old['handler_id'], 'created_by' => (int)$_SESSION['user_id']]);
             $requestId = (int)$pdo->lastInsertId();
             save_multi($pdo, $requestId, $selectedTypeIds, $hardwareRows);
             save_device($pdo, $requestId, $deviceData);
@@ -535,7 +535,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="record-full"><label for="service_details">Butiran Jenis Perkhidmatan (Pilihan)</label><textarea id="service_details" name="service_details" rows="4" maxlength="5000"><?= e($old['service_details']) ?></textarea></div>
                             <div><label for="estimated_cost">Kos (RM) *</label><input id="estimated_cost" name="estimated_cost" type="number" min="0" max="99999999.99" step="0.01" placeholder="0.00" value="<?= e($old['estimated_cost']) ?>" required></div>
-                            <div><label for="requested_at">Tarikh/Masa Permintaan *</label><input id="requested_at" name="requested_at" type="datetime-local" value="<?= e($old['requested_at']) ?>" required></div>
+                            <div><label for="requested_at">Tarikh Permintaan *</label><input id="requested_at" name="requested_at" type="date" value="<?= e($old['requested_at']) ?>" required></div>
                             <div class="record-full"><label for="handler_id">Nama Pengendali Staf IT *</label><select id="handler_id" name="handler_id" required>
                                     <option value="">Pilih pengendali staf IT</option><?php foreach ($handlers as $item): ?><option value="<?= (int)$item['id'] ?>" <?= (string)$item['id'] === $old['handler_id'] ? 'selected' : '' ?>><?= e($item['name']) ?></option><?php endforeach; ?>
                                 </select></div>
@@ -748,7 +748,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     requester_email: 'Emel',
                     service_details: 'Butiran Jenis Perkhidmatan',
                     estimated_cost: 'Kos (RM)',
-                    requested_at: 'Tarikh/Masa Permintaan',
+                    requested_at: 'Tarikh Permintaan',
                     handler_id: 'Nama Pengendali Staf IT'
                 };
                 panels.forEach((panel, i) => {
