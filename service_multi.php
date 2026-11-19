@@ -100,20 +100,16 @@ function save_device(PDO $pdo, int $id, array $d): void
     $cols = ['requester_phone', 'requester_email', 'device_ownership', 'device_type', 'device_type_other', 'device_brand', 'device_model', 'device_serial', 'asset_number', 'device_condition', 'condition_notes'];
     $sets = implode(',', array_map(static fn($c) => "$c=?", $cols));
     $pdo->prepare("UPDATE service_requests SET $sets WHERE id=?")->execute([...array_map(static fn($c) => $d[$c] ?: null, $cols), $id]);
-    $pdo->prepare('DELETE FROM service_request_accessories WHERE request_id=?')->execute([$id]);
-    $stmt = $pdo->prepare('INSERT INTO service_request_accessories(request_id,accessory_name) VALUES (?,?)');
-    foreach ($d['accessories'] as $v) $stmt->execute([$id, $v === 'Lain-lain' ? $d['accessory_other'] ?: 'Lain-lain' : $v]);
+    $accessories = array_map(static fn($v) => $v === 'Lain-lain' ? ($d['accessory_other'] ?: 'Lain-lain') : $v, $d['accessories']);
+    $pdo->prepare('UPDATE service_requests SET accessories=? WHERE id=?')->execute([implode(', ', $accessories), $id]);
 }
 function fetch_device(PDO $pdo, array $rows): array
 {
     if (!$rows) return $rows;
-    $ids = array_column($rows, 'id');
-    $qs = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $pdo->prepare("SELECT request_id,accessory_name FROM service_request_accessories WHERE request_id IN ($qs)");
-    $stmt->execute($ids);
-    $access = [];
-    foreach ($stmt as $a) $access[(int)$a['request_id']][] = $a['accessory_name'];
-    foreach ($rows as &$r) $r['accessories'] = $access[(int)$r['id']] ?? [];
+    foreach ($rows as &$r) {
+        $value = trim((string)($r['accessories'] ?? ''));
+        $r['accessories'] = $value === '' ? [] : array_map('trim', explode(',', $value));
+    }
     unset($r);
     return $rows;
 }
