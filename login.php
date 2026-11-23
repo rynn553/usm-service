@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#32165e">
-  <title>Log Masuk | e-Servis Digital@AMDI</title>
+  <title>Log Masuk | e-Servis Digital@PKTAAB</title>
   <style>
     :root {
       --purple: #38196c;
@@ -480,11 +480,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="logo-frame">
           <img src="<?= APP_BASE ?>/usm-logo.png" alt="Logo rasmi Universiti Sains Malaysia" width="286" height="232">
         </div>
-        <h1>e-Servis Digital@AMDI</h1>
+        <h1>e-Servis Digital@PKTAAB</h1>
         <p class="brand-subtitle">SISTEM PENGURUSAN PERKHIDMATAN IT</p>
         <div class="brand-rule" aria-hidden="true"></div>
       </div>
-      <p class="brand-bottom">Universiti Sains Malaysia · AMDI</p>
+      <p class="brand-bottom">Universiti Sains Malaysia · PKTAAB</p>
     </section>
     <section class="form-panel" aria-labelledby="login-title">
       <div class="form-wrap">
