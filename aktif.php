@@ -235,7 +235,7 @@ function page_url(int $page, string $q, string $status, string $date, string $so
         <section class="active-detail-section">
           <h3><span class="active-section-icon" aria-hidden="true">#</span> Ringkasan Permintaan</h3>
           <div class="active-detail-grid">
-            <div><small>UID</small><strong>UID #<?= (int)$r['id'] ?></strong></div>
+            <div><small>UID</small><strong><?= (int)$r['id'] ?></strong></div>
             <div><small>Status</small><strong><?= $r['status'] === 'ready' ? 'Ready' : 'In Progress' ?></strong></div>
           </div>
         </section>

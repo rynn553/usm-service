@@ -1061,10 +1061,12 @@ button,
   padding-right: 24px;
 }
 .active-uid {
-  font-size: 12px;
+  display: inline;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
   color: #57238a;
-  padding: 6px 9px;
-  border-radius: 7px;
+  font-size: 12px;
   font-weight: 750;
   white-space: nowrap;
 }
